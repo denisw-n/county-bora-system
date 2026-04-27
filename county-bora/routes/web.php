@@ -6,7 +6,10 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\WardController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\SpatialController;
-use App\Models\Report; // Added to fetch data for the dashboard map
+use App\Http\Controllers\Admin\PublicCommController; 
+use App\Http\Controllers\Admin\UserController; 
+use App\Http\Controllers\Admin\HotlineController; // [NEW] Added for Emergency Hotlines
+use App\Models\Report; 
 use Illuminate\Support\Facades\Route;
 
 // --- Public Routes ---
@@ -25,7 +28,6 @@ Route::middleware(['auth'])->group(function () {
     
     /**
      * Main Dashboard
-     * Updated: Fetches all reports to populate the Spatial Awareness section on the dashboard.
      */
     Route::get('/admin/dashboard', function () {
         $reports = Report::all(); 
@@ -33,8 +35,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('admin.dashboard');
 
     /**
-     * Report Management (Task Tracking & Lifecycle)
-     * Sticking to 'id' for uniformity as discussed.
+     * Report Management
      */
     Route::prefix('admin/reports')->name('admin.reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
@@ -43,7 +44,24 @@ Route::middleware(['auth'])->group(function () {
     });
 
     /**
-     * Ward Management (Normalization & Localization)
+     * Public Communication
+     */
+    Route::prefix('admin/communication')->name('admin.communication.')->group(function () {
+        Route::get('/', [PublicCommController::class, 'index'])->name('index');
+        Route::post('/broadcast', [PublicCommController::class, 'broadcast'])->name('broadcast');
+        Route::get('/search-users', [PublicCommController::class, 'searchUsers'])->name('users.search');
+    });
+
+    /**
+     * User Verification
+     */
+    Route::prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::get('/verification', [UserController::class, 'verificationIndex'])->name('verification');
+        Route::patch('/{user}/verify', [UserController::class, 'toggleVerification'])->name('verify');
+    });
+
+    /**
+     * Ward Management
      */
     Route::resource('/admin/wards', WardController::class)->names([
         'index'   => 'admin.wards.index',
@@ -53,7 +71,7 @@ Route::middleware(['auth'])->group(function () {
     ]);
 
     /**
-     * Department Management (Service Sectoring)
+     * Department Management
      */
     Route::resource('/admin/departments', DepartmentController::class)->names([
         'index'   => 'admin.departments.index',
@@ -63,12 +81,23 @@ Route::middleware(['auth'])->group(function () {
     ]);
 
     /**
-     * Spatial Awareness (Live Surveillance & Mapping)
+     * Emergency Hotlines [NEW]
+     * Maps to: POST /admin/hotlines, PATCH /admin/hotlines/{id}, DELETE /admin/hotlines/{id}
+     */
+    Route::resource('/admin/hotlines', HotlineController::class)->names([
+        'index'   => 'admin.hotlines.index',
+        'store'   => 'admin.hotlines.store',
+        'update'  => 'admin.hotlines.update',
+        'destroy' => 'admin.hotlines.destroy',
+    ])->except(['show', 'create', 'edit']);
+
+    /**
+     * Spatial Awareness
      */
     Route::get('/admin/spatial', [SpatialController::class, 'index'])->name('admin.spatial.index');
 
     /**
-     * Audit Trail (Accountability & Logging)
+     * Audit Trail
      */
     Route::get('/admin/logs', [AuditLogController::class, 'index'])->name('admin.logs.index');
 

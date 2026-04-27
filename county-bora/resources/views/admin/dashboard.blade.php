@@ -1,159 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>County Bora | Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+@extends('layouts.admin')
+
+@section('title', 'County Bora | Admin Dashboard')
+
+@push('scripts')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
-        body { font-family: 'Public Sans', sans-serif; }
-        .sidebar-item-active { background-color: #FEDF0E; color: #716200; font-weight: 900; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
         #dashboardMap { height: 450px; width: 100%; border-radius: 1.5rem; z-index: 10; }
     </style>
-</head>
-<body class="bg-[#F5F5F5] antialiased">
-    <div class="flex min-h-screen">
-        
-        <aside class="w-[280px] bg-[#00872E] text-white flex flex-col fixed h-full shadow-2xl z-30">
-            <div class="p-6 flex items-center gap-3 border-b border-white/10">
-                <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg p-1.5 overflow-hidden">
-                    <img src="{{ asset('images/logo.png') }}" 
-                         alt="Nairobi County Logo" 
-                         class="w-full h-full object-contain"
-                         onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Nairobi_County_Coat_of_Arms.png/600px-Nairobi_County_Coat_of_Arms.png';">
-                </div>
-                <div>
-                    <h1 class="font-black leading-tight text-sm tracking-tight uppercase">Nairobi County</h1>
-                    <p class="text-[9px] font-bold opacity-50 tracking-widest uppercase">Admin Monolith</p>
-                </div>
-            </div>
+@endpush
 
-            <nav class="flex-grow overflow-y-auto custom-scrollbar p-4 space-y-1">
-                <a href="{{ route('admin.dashboard') }}" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs transition {{ request()->routeIs('admin.dashboard') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
-                    <span class="text-lg">⊞</span> Dashboard
-                </a>
-                
-                <div class="pt-6 pb-2 px-4 text-[10px] font-black opacity-40 uppercase tracking-[0.2em]">Operations</div>
-                
-                <a href="{{ route('admin.reports.index') }}" 
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.reports.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold hover:text-white' }}">
-                    <span>⚠</span> Reports
-                </a>
-
-                <a href="{{ route('admin.wards.index') }}" 
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.wards.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold hover:text-white' }}">
-                    <span>🏢</span> Wards
-                </a>
-
-                <a href="{{ route('admin.departments.index') }}" 
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.departments.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold hover:text-white' }}">
-                    <span>📁</span> Departments
-                </a>
-
-                <a href="{{ route('admin.spatial.index') }}" 
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.spatial.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold hover:text-white' }}">
-                    <span>🗺</span> Spatial Awareness
-                </a>
-
-                <div class="pt-6 pb-2 px-4 text-[10px] font-black opacity-40 uppercase tracking-[0.2em]">Management</div>
-                
-                <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-white/70 hover:bg-white/10 hover:text-white rounded-xl text-xs font-semibold transition">
-                    <span>📢</span> Public Communication
-                </a>
-                
-                <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-white/70 hover:bg-white/10 hover:text-white rounded-xl text-xs font-semibold transition">
-                    <span>🛡</span> User Verification
-                </a>
-                
-                <a href="{{ route('admin.logs.index') }}" 
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.logs.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold hover:text-white' }}">
-                    <span>📋</span> System Audit
-                </a>
+@section('content')
+    <header class="h-16 bg-white/90 backdrop-blur-md sticky top-0 z-20 px-8 flex items-center justify-between border-b border-gray-100">
+        <div class="flex items-center gap-8">
+            <span class="text-[#00872E] font-black text-xs tracking-widest uppercase">Nairobi County Admin</span>
+            <nav class="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                <a href="{{ route('admin.dashboard') }}" class="text-[#00872E] border-b-2 border-[#00872E] py-5">Global View</a>
+                <a href="{{ route('admin.reports.index') }}" class="py-5 hover:text-gray-900 transition">Analytics</a>
             </nav>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="w-8 h-8 rounded-lg bg-[#00872E] flex items-center justify-center text-white font-black text-xs shadow-sm uppercase">
+                {{ substr(Auth::user()->name ?? 'D', 0, 1) }}
+            </div>
+        </div>
+    </header>
 
-            <div class="p-4 bg-[#007A29] border-t border-white/5">
-                <div class="bg-[#FEDF0E] p-3 rounded-xl text-[#716200] text-[10px] font-black text-center shadow-lg mb-4 cursor-pointer">
-                    ★ EMERGENCY HOTLINES
+    <div class="p-8 max-w-[1400px] mx-auto space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-[#006D24] p-6 rounded-[2rem] text-white shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Active Reports</span>
+                <h2 class="text-4xl font-black mt-1">{{ count($reports ?? []) }}</h2>
+            </div>
+            <div class="bg-[#FEDF0E] p-6 rounded-[2rem] text-[#716200] shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Resolution Rate</span>
+                <h2 class="text-4xl font-black mt-1">84.2%</h2>
+            </div>
+            <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">System Health</span>
+                <h2 class="text-4xl font-black mt-1 text-gray-800">99.9%</h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+            <div class="col-span-12 lg:col-span-8 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="font-black text-gray-800 text-sm tracking-tight uppercase">Spatial Awareness Overview</h3>
+                    <div class="flex gap-2">
+                        <span class="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black rounded-full border border-green-100 uppercase">Interactive Preview</span>
+                    </div>
                 </div>
-                <div class="space-y-1 px-2">
-                    <a href="#" class="block text-[11px] text-white/50 hover:text-white transition">⚙ Settings</a>
-                    <a href="#" class="block text-[11px] text-white/50 hover:text-white transition">❓ Support</a>
-                    <form method="POST" action="{{ route('logout') }}" class="pt-2">
-                        @csrf
-                        <button class="text-[11px] text-red-300 hover:text-red-100 font-bold">➔ Logout</button>
-                    </form>
+                <div class="bg-[#F9FAF9] rounded-3xl overflow-hidden border border-gray-50">
+                    <div id="dashboardMap"></div>
                 </div>
             </div>
-        </aside>
 
-        <main class="flex-grow ml-[280px]">
-            <header class="h-16 bg-white/90 backdrop-blur-md sticky top-0 z-20 px-8 flex items-center justify-between border-b border-gray-100">
-                <div class="flex items-center gap-8">
-                    <span class="text-[#00872E] font-black text-xs tracking-widest uppercase">Nairobi County Admin</span>
-                    <nav class="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        <a href="{{ route('admin.dashboard') }}" class="text-[#00872E] border-b-2 border-[#00872E] py-5">Global View</a>
-                        <a href="{{ route('admin.reports.index') }}" class="py-5 hover:text-gray-900 transition">Analytics</a>
-                    </nav>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="w-8 h-8 rounded-lg bg-[#00872E] flex items-center justify-center text-white font-black text-xs shadow-sm uppercase">
-                        {{ substr(Auth::user()->name ?? 'D', 0, 1) }}
+            <div class="col-span-12 lg:col-span-4 bg-[#004D1A] p-8 rounded-[2.5rem] text-white shadow-2xl flex flex-col h-full">
+                <h3 class="font-black text-xs mb-8 flex justify-between items-center tracking-widest uppercase">
+                    <span>Live System Audit</span>
+                    <span class="bg-red-500 text-[8px] px-2 py-0.5 rounded font-black animate-pulse">LIVE</span>
+                </h3>
+                <div class="space-y-4 flex-grow">
+                    <div class="bg-white/10 p-5 rounded-2xl border-l-4 border-[#FEDF0E]">
+                        <p class="text-[11px] font-black uppercase tracking-tight">System Status</p>
+                        <p class="text-[10px] text-white/50 leading-relaxed mt-1">
+                            Admin Monolith active. Mapping {{ count($reports ?? []) }} coordinates across Nairobi wards.
+                        </p>
                     </div>
-                </div>
-            </header>
-
-            <div class="p-8 max-w-[1400px] mx-auto space-y-6">
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="bg-[#006D24] p-6 rounded-[2rem] text-white shadow-xl h-40 flex flex-col justify-center">
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Active Reports</span>
-                        <h2 class="text-4xl font-black mt-1">{{ count($reports ?? []) }}</h2>
-                    </div>
-                    <div class="bg-[#FEDF0E] p-6 rounded-[2rem] text-[#716200] shadow-xl h-40 flex flex-col justify-center">
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Revenue Target</span>
-                        <h2 class="text-4xl font-black mt-1">84.2%</h2>
-                    </div>
-                    <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm h-40 flex flex-col justify-center">
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">System Health</span>
-                        <h2 class="text-4xl font-black mt-1 text-gray-800">99.9%</h2>
+                    <div class="bg-white/5 p-5 rounded-2xl border-l-4 border-white/20">
+                        <p class="text-[11px] font-black uppercase tracking-tight text-white/40">Database Connectivity</p>
+                        <p class="text-[10px] text-white/30 leading-relaxed mt-1">Stable (Ping: 14ms)</p>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-12 gap-6">
-                    <div class="col-span-8 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                        <div class="flex justify-between items-center mb-8">
-                            <h3 class="font-black text-gray-800 text-sm tracking-tight uppercase">Spatial Awareness Engine</h3>
-                            <div class="flex gap-2">
-                                <span class="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black rounded-full border border-green-100 uppercase">Live Map</span>
-                            </div>
-                        </div>
-                        <div class="bg-[#F9FAF9] rounded-3xl overflow-hidden border border-gray-50">
-                            <div id="dashboardMap"></div>
-                        </div>
-                    </div>
-
-                    <div class="col-span-4 bg-[#004D1A] p-8 rounded-[2.5rem] text-white shadow-2xl flex flex-col h-full">
-                        <h3 class="font-black text-xs mb-8 flex justify-between items-center tracking-widest uppercase">
-                            <span>Live System Audit</span>
-                            <span class="bg-red-500 text-[8px] px-2 py-0.5 rounded font-black animate-pulse">LIVE</span>
-                        </h3>
-                        <div class="space-y-4 flex-grow">
-                            <div class="bg-white/10 p-5 rounded-2xl border-l-4 border-[#FEDF0E]">
-                                <p class="text-[11px] font-black uppercase tracking-tight">System Initialization</p>
-                                <p class="text-[10px] text-white/50 leading-relaxed mt-1">Admin Monolith structure updated. Mapping {{ count($reports ?? []) }} active reports.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <a href="{{ route('admin.logs.index') }}" class="mt-8 block text-center bg-[#FEDF0E] text-[#716200] text-[10px] font-black py-3 rounded-xl uppercase tracking-widest hover:opacity-90 transition">
+                    View Full Audit Trail
+                </a>
             </div>
-        </main>
+        </div>
     </div>
 
     <script>
@@ -180,5 +103,4 @@
             });
         });
     </script>
-</body>
-</html>
+@endsection

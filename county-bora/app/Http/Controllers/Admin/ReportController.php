@@ -5,19 +5,23 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\AuditLog;
-use App\Models\Department; // Added to fetch departments if needed
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ReportController extends Controller
 {
     /**
-     * Display all reports on the Admin Dashboard
+     * Display all reports with necessary data for the dispatch modals.
      */
     public function index()
     {
-        $reports = Report::with('user')->latest()->paginate(10);
-        return view('admin.reports.index', compact('reports'));
+        $reports = Report::with(['user', 'department'])->latest()->paginate(10);
+        
+        // Fix: Fetching departments so the modal dropdowns don't crash the view
+        $departments = Department::orderBy('dept_name', 'asc')->get(); 
+
+        return view('admin.reports.index', compact('reports', 'departments'));
     }
 
     /**
@@ -25,9 +29,9 @@ class ReportController extends Controller
      */
     public function show($id)
     {
-        $report = Report::findOrFail($id);
-        // Fetch departments so the dispatch dropdown has valid UUIDs to choose from
-        $departments = \App\Models\Department::all(); 
+        $report = Report::with(['user', 'department'])->findOrFail($id);
+        $departments = Department::all(); 
+        
         return view('admin.reports.show', compact('report', 'departments'));
     }
 
@@ -38,11 +42,10 @@ class ReportController extends Controller
     {
         $report = Report::findOrFail($id);
         
-        // Updated Validation: Added dept_id check to prevent foreign key crashes
         $request->validate([
             'status' => 'required|string',
             'priority' => 'required|string',
-            'dept_id' => 'nullable|exists:departments,id', // CRITICAL: Ensures the UUID exists
+            'dept_id' => 'nullable|exists:departments,id', 
         ]);
 
         $report->update([
@@ -50,7 +53,7 @@ class ReportController extends Controller
             'priority' => $request->priority,
             'admin_comment' => $request->admin_comment,
             'audit_remarks' => $request->audit_remarks,
-            'dept_id' => $request->dept_id, // Now safely receives a valid UUID or null
+            'dept_id' => $request->dept_id,
         ]);
 
         // AUTOMATIC AUDIT LOG
@@ -58,11 +61,12 @@ class ReportController extends Controller
         
         AuditLog::create([
             'admin_id' => Auth::id(),
-            'action' => "Updated status to {$request->status} and dispatched to Dept: {$request->dept_id} for report #{$shortId}",
+            'action' => "Dispatched report #{$shortId} to Department ID: {$request->dept_id} with status: {$request->status}",
             'target_id' => $report->id, 
             'timestamp' => now(),
         ]);
 
-        return redirect()->route('admin.reports.index')->with('success', "Report #{$shortId} updated and dispatched successfully.");
+        return redirect()->route('admin.reports.index')
+            ->with('success', "Report #{$shortId} has been successfully updated and dispatched.");
     }
 }
