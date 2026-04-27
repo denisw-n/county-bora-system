@@ -32,6 +32,9 @@
 
                 <form action="{{ route('admin.communication.broadcast') }}" method="POST" class="space-y-6">
                     @csrf
+                    {{-- Default Type to General or Alert --}}
+                    <input type="hidden" name="type" value="General">
+
                     <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
                         <label class="text-[10px] font-black text-gray-400 uppercase mb-4 block tracking-widest">Audience Scope</label>
                         <div class="flex gap-4">
@@ -46,9 +49,15 @@
                         </div>
                     </div>
 
-                    <div id="userSelectionArea" class="hidden">
+                    <div id="userSelectionArea" class="hidden relative">
                         <label class="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Search Citizen</label>
-                        <input type="text" id="userSearchInput" class="w-full bg-[#F3F4F6] border-none rounded-xl px-4 py-3 text-sm" placeholder="ID or Name...">
+                        <input type="text" id="userSearchInput" class="w-full bg-[#F3F4F6] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500" placeholder="Type name, email, or ID..." autocomplete="off">
+                        
+                        {{-- Results Dropdown --}}
+                        <div id="searchResults" class="absolute z-30 w-full bg-white mt-1 rounded-xl shadow-2xl border border-gray-100 hidden max-h-60 overflow-y-auto"></div>
+                        
+                        {{-- Hidden input for selected User ID --}}
+                        <input type="hidden" name="user_id" id="selectedUserId">
                     </div>
 
                     <div>
@@ -61,7 +70,7 @@
                         <textarea name="content" id="bodyInput" rows="4" required class="w-full bg-[#F3F4F6] border-none rounded-xl px-4 py-3 text-sm" placeholder="Enter message..."></textarea>
                     </div>
 
-                    <button type="submit" class="w-full bg-[#FEDF0E] text-[#716200] font-black py-4 rounded-xl shadow-lg uppercase text-[10px]">▶ Dispatch Message</button>
+                    <button type="submit" class="w-full bg-[#FEDF0E] text-[#716200] font-black py-4 rounded-xl shadow-lg uppercase text-[10px] active:scale-[0.98] transition">▶ Dispatch Message</button>
                 </form>
             </div>
 
@@ -87,12 +96,68 @@
     const bodyInput = document.getElementById('bodyInput');
     const previewTitle = document.getElementById('previewTitle');
     const previewBody = document.getElementById('previewBody');
+    const userSearchInput = document.getElementById('userSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    const selectedUserId = document.getElementById('selectedUserId');
 
+    // Preview Logic
     titleInput.addEventListener('input', (e) => previewTitle.innerText = e.target.value || "Subject Line");
     bodyInput.addEventListener('input', (e) => previewBody.innerText = e.target.value || "Admin is typing...");
     
+    // Toggle User Selection Area
     function toggleUserSelection(show) {
-        document.getElementById('userSelectionArea').classList.toggle('hidden', !show);
+        const area = document.getElementById('userSelectionArea');
+        area.classList.toggle('hidden', !show);
+        userSearchInput.required = show;
+        if (!show) {
+            userSearchInput.value = '';
+            selectedUserId.value = '';
+            searchResults.classList.add('hidden');
+        }
     }
+
+    // Live Search Logic
+    userSearchInput.addEventListener('input', function(e) {
+        let query = e.target.value;
+
+        if (query.length < 2) {
+            searchResults.classList.add('hidden');
+            return;
+        }
+
+        fetch(`/admin/communication/search-users?q=${query}`)
+            .then(response => response.json())
+            .then(data => {
+                searchResults.innerHTML = '';
+                
+                if (data.length > 0) {
+                    searchResults.classList.remove('hidden');
+                    data.forEach(user => {
+                        let div = document.createElement('div');
+                        div.className = "p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-none transition";
+                        div.innerHTML = `
+                            <div class="font-black text-gray-800 text-[10px] uppercase tracking-wider">${user.first_name} ${user.last_name}</div>
+                            <div class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">${user.email}</div>
+                        `;
+                        div.onclick = function() {
+                            userSearchInput.value = `${user.first_name} ${user.last_name}`;
+                            selectedUserId.value = user.id;
+                            searchResults.classList.add('hidden');
+                        };
+                        searchResults.appendChild(div);
+                    });
+                } else {
+                    searchResults.innerHTML = '<div class="p-4 text-[10px] font-black text-gray-400 uppercase text-center">No Citizens Found</div>';
+                    searchResults.classList.remove('hidden');
+                }
+            });
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!userSearchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.classList.add('hidden');
+        }
+    });
 </script>
 @endpush

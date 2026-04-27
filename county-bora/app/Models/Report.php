@@ -15,26 +15,37 @@ class Report extends Model
     protected $primaryKey = 'id'; 
 
     protected $fillable = [
-        'user_id',       // Links to users.id [cite: 25]
-        'category',      // e.g., "Pothole", "Water Leakage" [cite: 26]
-        'description',   // Citizen's message [cite: 27]
-        'latitude',      // GPS north/south [cite: 28]
-        'longitude',     // GPS east/west [cite: 29]
-        'status',        // 'Pending', 'In Progress', 'Resolved' [cite: 30]
-        'priority',      // 'Low' to 'Critical' [cite: 32]
-        'dept_id',       // Links to departments.id [cite: 31]
-        'admin_comment', // Official feedback [cite: 33]
-        'audit_remarks', // Internal notes for accountability [cite: 152]
+        'user_id',       // Links to users.id
+        'category',      // e.g., "Pothole", "Water Leakage"
+        'description',   // Citizen's message
+        'latitude',      // GPS north/south
+        'longitude',     // GPS east/west
+        'status',        // 'Pending', 'In Progress', 'Resolved'
+        'priority',      // 'Low' to 'Critical'
+        'dept_id',       // Links to departments.id
+        'admin_comment', // Official feedback
+        'audit_remarks', // Internal notes for accountability
     ];
 
     /**
-     * Cast coordinates to high-precision decimals for spatial accuracy.
-     * Essential for the Live Incident Map[cite: 158].
+     * Cast coordinates to high-precision decimals.
      */
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
     ];
+
+    /**
+     * ACCESSOR: Generates the NCC Tracking Number.
+     * This takes the first 8 characters of the UUID.
+     * Usage: {{ $report->tracking_number }}
+     */
+    public function getTrackingNumberAttribute()
+    {
+        // Extracts the first 8 characters and converts to uppercase
+        $shortId = strtoupper(substr($this->id, 0, 8));
+        return "NCC-{$shortId}";
+    }
 
     protected static function boot()
     {
@@ -47,7 +58,7 @@ class Report extends Model
     }
 
     /**
-     * Relationship: A report is submitted by a citizen[cite: 25].
+     * Relationship: A report is submitted by a citizen.
      */
     public function user()
     {
@@ -55,7 +66,7 @@ class Report extends Model
     }
 
     /**
-     * Relationship: A report is assigned to a department for resolution[cite: 31].
+     * Relationship: A report is assigned to a department.
      */
     public function department()
     {

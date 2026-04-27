@@ -8,6 +8,7 @@ use App\Models\Alert;        // Your public broadcasts
 use App\Models\Notification; // Your personalized messages
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PublicCommController extends Controller
 {
@@ -16,7 +17,7 @@ class PublicCommController extends Controller
      */
     public function index()
     {
-        // 1. Fetch public alerts and format them for the unified view
+        // 1. Fetch public alerts
         $broadcasts = Alert::latest()->get()->map(function($item) {
             $item->display_scope = 'Public';
             $item->recipient = 'All Citizens';
@@ -32,7 +33,7 @@ class PublicCommController extends Controller
             return $item;
         });
 
-        // 3. Merge both collections and sort by date (newest first)
+        // 3. Merge and sort
         $allCommunications = $broadcasts->concat($personals)->sortByDesc('created_at');
 
         return view('admin.communication.index', compact('allCommunications'));
@@ -43,7 +44,6 @@ class PublicCommController extends Controller
      */
     public function broadcast(Request $request)
     {
-        // 1. Validate the input
         $request->validate([
             'title'   => 'required|string|max:255',
             'content' => 'required|string',
@@ -52,10 +52,8 @@ class PublicCommController extends Controller
             'type'    => 'required'
         ]);
 
-        // Using input() removes the "red" IDE error for 'scope' and 'content'
         if ($request->input('scope') === 'personal') {
             
-            // 2. Save to the notifications table
             Notification::create([
                 'user_id' => $request->input('user_id'),
                 'title'   => $request->input('title'),
@@ -68,7 +66,6 @@ class PublicCommController extends Controller
             
         } else {
             
-            // 3. Save to the alerts table (Public)
             Alert::create([
                 'author_id' => Auth::id(), 
                 'title'     => $request->input('title'),
@@ -83,17 +80,30 @@ class PublicCommController extends Controller
     }
 
     /**
-     * AJAX Search for citizens (National ID or Name).
+     * AJAX Search for verified citizens.
+     * Fixed to handle 'q' or 'query' parameters and scoped logic.
      */
     public function searchUsers(Request $request)
     {
-        // Using get() or input() here also satisfies the IDE
-        $query = $request->input('q');
-        
-        return User::where('first_name', 'LIKE', "%{$query}%")
-                    ->orWhere('last_name', 'LIKE', "%{$query}%")
-                    ->orWhere('national_id', 'LIKE', "%{$query}%")
-                    ->limit(10)
-                    ->get();
+        // Capture search term from 'q' (Select2 default) or 'query'
+        $term = $request->input('q') ?? $request->input('query') ?? $request->input('search');
+
+        if (empty($term)) {
+            return response()->json([]);
+        }
+
+        // Search logic optimized for verified citizens only
+        $users = User::where('role', 'citizen')
+            ->where('is_verified', true)
+            ->where(function($q) use ($term) {
+                $q->where('first_name', 'LIKE', "%{$term}%")
+                  ->orWhere('last_name', 'LIKE', "%{$term}%")
+                  ->orWhere('email', 'LIKE', "%{$term}%")
+                  ->orWhere('national_id', 'LIKE', "%{$term}%");
+            })
+            ->limit(15)
+            ->get(['id', 'first_name', 'last_name', 'email', 'national_id']);
+
+        return response()->json($users);
     }
 }

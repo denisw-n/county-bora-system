@@ -8,7 +8,7 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\SpatialController;
 use App\Http\Controllers\Admin\PublicCommController; 
 use App\Http\Controllers\Admin\UserController; 
-use App\Http\Controllers\Admin\HotlineController; // [NEW] Added for Emergency Hotlines
+use App\Http\Controllers\Admin\HotlineController; 
 use App\Models\Report; 
 use Illuminate\Support\Facades\Route;
 
@@ -53,11 +53,20 @@ Route::middleware(['auth'])->group(function () {
     });
 
     /**
-     * User Verification
+     * User Management & Verification
      */
     Route::prefix('admin/users')->name('admin.users.')->group(function () {
+        // Queue for unverified citizens
         Route::get('/verification', [UserController::class, 'verificationIndex'])->name('verification');
+        
+        // Approve/Toggle Verification
         Route::patch('/{user}/verify', [UserController::class, 'toggleVerification'])->name('verify');
+        
+        // Reject/Delete User (This was missing)
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        
+        // List all citizens
+        Route::get('/', [UserController::class, 'index'])->name('index');
     });
 
     /**
@@ -81,8 +90,7 @@ Route::middleware(['auth'])->group(function () {
     ]);
 
     /**
-     * Emergency Hotlines [NEW]
-     * Maps to: POST /admin/hotlines, PATCH /admin/hotlines/{id}, DELETE /admin/hotlines/{id}
+     * Emergency Hotlines
      */
     Route::resource('/admin/hotlines', HotlineController::class)->names([
         'index'   => 'admin.hotlines.index',

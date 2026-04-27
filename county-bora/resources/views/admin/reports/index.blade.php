@@ -39,7 +39,10 @@
             <tbody class="text-xs font-semibold text-gray-600">
                 @forelse($reports as $report)
                 <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition">
-                    <td class="px-8 py-5 font-bold text-gray-800">#{{ strtoupper(substr($report->id, 0, 8)) }}</td>
+                    <td class="px-8 py-5 font-black text-gray-800 tracking-tighter">
+                        {{ $report->tracking_number }}
+                    </td>
+                    
                     <td class="px-8 py-5 text-gray-400 uppercase">{{ $report->category }}</td>
                     <td class="px-8 py-5 font-bold text-[#00872E]">{{ $report->ward->name ?? 'N/A' }}</td>
                     <td class="px-8 py-5">
