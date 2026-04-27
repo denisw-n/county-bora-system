@@ -2,25 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Department extends Model
+class AuditLog extends Model
 {
     use HasFactory;
 
-    // Tells Laravel the ID is a string (UUID), not an integer
     protected $keyType = 'string';
     public $incrementing = false;
 
     protected $fillable = [
-        'id',
-        'dept_name',
         'admin_id',
+        'action',
+        'target_id',
+        'timestamp',
     ];
 
-    // Automatically generates a UUID when a new department is created
     protected static function boot()
     {
         parent::boot();
@@ -29,14 +28,5 @@ class Department extends Model
                 $model->{$model->getKeyName()} = (string) Str::uuid();
             }
         });
-    }
-
-    /**
-     * Relationship: A department oversees many reports
-     * This allows us to calculate performance percentages
-     */
-    public function reports()
-    {
-        return $this->hasMany(Report::class, 'department_id');
     }
 }

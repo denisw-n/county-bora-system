@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>County Bora | Dashboard</title>
+    <title>Wards | County Bora Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
         body { font-family: 'Public Sans', sans-serif; }
         .sidebar-item-active { background-color: #FEDF0E; color: #716200; font-weight: 900; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        #dashboardMap { height: 450px; width: 100%; border-radius: 1.5rem; z-index: 10; }
     </style>
 </head>
 <body class="bg-[#F5F5F5] antialiased">
@@ -64,17 +59,14 @@
                 </a>
 
                 <div class="pt-6 pb-2 px-4 text-[10px] font-black opacity-40 uppercase tracking-[0.2em]">Management</div>
-                
                 <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-white/70 hover:bg-white/10 hover:text-white rounded-xl text-xs font-semibold transition">
                     <span>📢</span> Public Communication
                 </a>
-                
                 <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-white/70 hover:bg-white/10 hover:text-white rounded-xl text-xs font-semibold transition">
                     <span>🛡</span> User Verification
                 </a>
                 
-                <a href="{{ route('admin.logs.index') }}" 
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.logs.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold hover:text-white' }}">
+                <a href="{{ route('admin.logs.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.logs.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold hover:text-white' }}">
                     <span>📋</span> System Audit
                 </a>
             </nav>
@@ -85,7 +77,6 @@
                 </div>
                 <div class="space-y-1 px-2">
                     <a href="#" class="block text-[11px] text-white/50 hover:text-white transition">⚙ Settings</a>
-                    <a href="#" class="block text-[11px] text-white/50 hover:text-white transition">❓ Support</a>
                     <form method="POST" action="{{ route('logout') }}" class="pt-2">
                         @csrf
                         <button class="text-[11px] text-red-300 hover:text-red-100 font-bold">➔ Logout</button>
@@ -97,10 +88,10 @@
         <main class="flex-grow ml-[280px]">
             <header class="h-16 bg-white/90 backdrop-blur-md sticky top-0 z-20 px-8 flex items-center justify-between border-b border-gray-100">
                 <div class="flex items-center gap-8">
-                    <span class="text-[#00872E] font-black text-xs tracking-widest uppercase">Nairobi County Admin</span>
+                    <span class="text-[#00872E] font-black text-xs tracking-widest uppercase">Ward Management</span>
                     <nav class="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        <a href="{{ route('admin.dashboard') }}" class="text-[#00872E] border-b-2 border-[#00872E] py-5">Global View</a>
-                        <a href="{{ route('admin.reports.index') }}" class="py-5 hover:text-gray-900 transition">Analytics</a>
+                        <a href="{{ route('admin.dashboard') }}" class="py-5 hover:text-gray-900 transition">Global View</a>
+                        <a href="{{ route('admin.wards.index') }}" class="text-[#00872E] border-b-2 border-[#00872E] py-5">Ward Registry</a>
                     </nav>
                 </div>
                 <div class="flex items-center gap-4">
@@ -111,74 +102,98 @@
             </header>
 
             <div class="p-8 max-w-[1400px] mx-auto space-y-6">
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="bg-[#006D24] p-6 rounded-[2rem] text-white shadow-xl h-40 flex flex-col justify-center">
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Active Reports</span>
-                        <h2 class="text-4xl font-black mt-1">{{ count($reports ?? []) }}</h2>
+                
+                @if(session('success'))
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-xl text-xs font-bold uppercase tracking-widest mb-4">
+                        {{ session('success') }}
                     </div>
-                    <div class="bg-[#FEDF0E] p-6 rounded-[2rem] text-[#716200] shadow-xl h-40 flex flex-col justify-center">
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Revenue Target</span>
-                        <h2 class="text-4xl font-black mt-1">84.2%</h2>
-                    </div>
-                    <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm h-40 flex flex-col justify-center">
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">System Health</span>
-                        <h2 class="text-4xl font-black mt-1 text-gray-800">99.9%</h2>
-                    </div>
+                @endif
+
+                <div class="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                    <h3 class="font-black text-gray-800 text-sm uppercase tracking-widest mb-6">Register New Ward</h3>
+                    <form action="{{ route('admin.wards.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        @csrf
+                        <div>
+                            <label class="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Ward Name</label>
+                            <input type="text" name="name" required class="w-full bg-[#F3F4F6] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00872E]" placeholder="e.g. Roysambu">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Sub-County</label>
+                            <input type="text" name="sub_county" required class="w-full bg-[#F3F4F6] border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00872E]" placeholder="e.g. Kasarani">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-[#00872E] text-white font-black py-3 rounded-xl hover:bg-[#006D24] transition uppercase text-[10px] tracking-widest shadow-lg">
+                                Add Ward to System
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
-                <div class="grid grid-cols-12 gap-6">
-                    <div class="col-span-8 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                        <div class="flex justify-between items-center mb-8">
-                            <h3 class="font-black text-gray-800 text-sm tracking-tight uppercase">Spatial Awareness Engine</h3>
-                            <div class="flex gap-2">
-                                <span class="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black rounded-full border border-green-100 uppercase">Live Map</span>
-                            </div>
-                        </div>
-                        <div class="bg-[#F9FAF9] rounded-3xl overflow-hidden border border-gray-50">
-                            <div id="dashboardMap"></div>
-                        </div>
+                <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="p-8 border-b border-gray-50">
+                        <h3 class="font-black text-gray-800 text-sm uppercase tracking-widest">Active Ward Directory</h3>
                     </div>
-
-                    <div class="col-span-4 bg-[#004D1A] p-8 rounded-[2.5rem] text-white shadow-2xl flex flex-col h-full">
-                        <h3 class="font-black text-xs mb-8 flex justify-between items-center tracking-widest uppercase">
-                            <span>Live System Audit</span>
-                            <span class="bg-red-500 text-[8px] px-2 py-0.5 rounded font-black animate-pulse">LIVE</span>
-                        </h3>
-                        <div class="space-y-4 flex-grow">
-                            <div class="bg-white/10 p-5 rounded-2xl border-l-4 border-[#FEDF0E]">
-                                <p class="text-[11px] font-black uppercase tracking-tight">System Initialization</p>
-                                <p class="text-[10px] text-white/50 leading-relaxed mt-1">Admin Monolith structure updated. Mapping {{ count($reports ?? []) }} active reports.</p>
-                            </div>
-                        </div>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                <th class="px-8 py-5">Ward Name</th>
+                                <th class="px-8 py-5">Sub-County</th>
+                                <th class="px-8 py-5 text-center">Active Incidents</th>
+                                <th class="px-8 py-5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-xs font-semibold text-gray-600">
+                            @foreach($wards as $ward)
+                            <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition">
+                                <td class="px-8 py-5 font-bold text-gray-800 uppercase tracking-tight">{{ $ward->name }}</td>
+                                <td class="px-8 py-5 text-gray-400 font-bold uppercase">{{ $ward->sub_county }}</td>
+                                <td class="px-8 py-5 text-center">
+                                    <span class="bg-[#FEDF0E] text-[#716200] px-3 py-1 rounded-full font-black text-[10px] shadow-sm">
+                                        {{ $ward->reports_count ?? 0 }}
+                                    </span>
+                                </td>
+                                <td class="px-8 py-5 text-right flex justify-end gap-4">
+                                    <button onclick="editWard('{{ $ward->id }}', '{{ $ward->name }}', '{{ $ward->sub_county }}')" 
+                                            class="text-[#00872E] hover:text-green-800 font-black uppercase text-[10px] tracking-widest">
+                                        Edit
+                                    </button>
+                                    <form action="{{ route('admin.wards.destroy', $ward->id) }}" method="POST" onsubmit="return confirm('Archive this ward?');" class="inline">
+                                        @csrf @method('DELETE')
+                                        <button class="text-red-400 hover:text-red-600 font-black uppercase text-[10px] tracking-widest">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <div class="p-6 bg-gray-50/30">
+                        {{ $wards->links() }}
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <form id="update-form" method="POST" style="display: none;">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="name" id="edit-name">
+        <input type="hidden" name="sub_county" id="edit-sub_county">
+    </form>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const map = L.map('dashboardMap', {
-                zoomControl: false,
-                attributionControl: false
-            }).setView([-1.286389, 36.817223], 12);
+        function editWard(id, currentName, currentSubCounty) {
+            const newName = prompt("Update Ward Name:", currentName);
+            const newSubCounty = prompt("Update Sub-County:", currentSubCounty);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-            const reports = @json($reports ?? []);
-            reports.forEach(report => {
-                if (report.latitude && report.longitude) {
-                    L.circleMarker([report.latitude, report.longitude], {
-                        radius: 8,
-                        fillColor: '#00872E',
-                        color: "#fff",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 1
-                    }).addTo(map);
-                }
-            });
-        });
+            if (newName && newSubCounty) {
+                const form = document.getElementById('update-form');
+                form.action = `/admin/wards/${id}`;
+                document.getElementById('edit-name').value = newName;
+                document.getElementById('edit-sub_county').value = newSubCounty;
+                form.submit();
+            }
+        }
     </script>
 </body>
 </html>
