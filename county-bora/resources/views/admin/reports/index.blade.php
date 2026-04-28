@@ -13,13 +13,62 @@
     </div>
 </header>
 
-<div class="p-8 max-w-[1400px] mx-auto space-y-6">
+<div class="p-8 max-w-[1400px] mx-auto space-y-10">
+    {{-- SUCCESS ALERT --}}
     @if(session('success'))
         <div class="bg-[#00872E] text-white p-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
             ✓ {{ session('success') }}
         </div>
     @endif
 
+    {{-- ERROR ALERT --}}
+    @if ($errors->any())
+        <div class="bg-red-600 text-white p-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>⚠ {{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- RAPID STATUS UPDATE CONSOLE --}}
+    <div class="bg-gray-900 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
+        <div class="relative z-10 grid md:grid-cols-2 gap-10 items-center">
+            <div>
+                <span class="text-[#FEDF0E] text-[10px] font-black uppercase tracking-[0.3em]">Quick Update Console</span>
+                <h2 class="text-white text-2xl font-black uppercase mt-2 tracking-tighter">Search & Update Status</h2>
+                <p class="text-gray-400 text-[10px] uppercase mt-2 tracking-widest leading-relaxed">Search by Tracking ID (NCC-...) to instantly update progress.</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="relative">
+                    <input type="text" id="reportPredictor" 
+                        placeholder="ENTER TRACKING ID (e.g. NCC...)" 
+                        class="w-full bg-white/10 border-none rounded-2xl px-6 py-4 text-white text-xs font-black placeholder:text-gray-600 focus:ring-2 focus:ring-[#FEDF0E] uppercase tracking-widest">
+                    <div id="predictionList" class="absolute z-50 w-full bg-white mt-2 rounded-2xl shadow-2xl border border-gray-100 hidden overflow-hidden"></div>
+                </div>
+
+                <div id="quickUpdateForm" class="hidden animate-in fade-in slide-in-from-top-2">
+                    <form action="{{ route('admin.reports.quickStatusUpdate') }}" method="POST" class="flex gap-2">
+                        @csrf
+                        <input type="hidden" name="report_id" id="quick_report_id">
+                        <select name="status" required class="flex-1 bg-[#FEDF0E] border-none rounded-xl px-4 py-4 text-[10px] font-black uppercase tracking-widest text-[#716200]">
+                            <option value="dispatched">Mark Dispatched</option>
+                            <option value="in_progress">Work In Progress</option>
+                            <option value="resolved">Issue Resolved</option>
+                            <option value="rejected">Reject Report</option>
+                        </select>
+                        <button type="submit" class="bg-white text-gray-900 font-black px-6 rounded-xl text-[10px] uppercase hover:bg-gray-100 transition">Update</button>
+                    </form>
+                    <p id="targetDisplay" class="text-[#FEDF0E] text-[8px] font-black uppercase mt-2 ml-1 tracking-widest"></p>
+                </div>
+            </div>
+        </div>
+        <div class="absolute -right-20 -top-20 w-64 h-64 bg-[#00872E]/10 rounded-full blur-3xl"></div>
+    </div>
+
+    {{-- INCIDENTS TABLE --}}
     <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
         <div class="p-8 border-b border-gray-50 flex justify-between items-center">
             <h3 class="font-black text-gray-800 text-sm uppercase tracking-widest">Incoming Incidents</h3>
@@ -28,9 +77,9 @@
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                    <th class="px-8 py-5">Report ID</th>
-                    <th class="px-8 py-5">Category</th>
-                    <th class="px-8 py-5">Ward</th>
+                    <th class="px-8 py-5">Tracking ID</th>
+                    <th class="px-8 py-5">Category & Title</th>
+                    <th class="px-8 py-5">Assigned Dept</th>
                     <th class="px-8 py-5">Priority</th>
                     <th class="px-8 py-5">Status</th>
                     <th class="px-8 py-5 text-right">Action</th>
@@ -39,12 +88,19 @@
             <tbody class="text-xs font-semibold text-gray-600">
                 @forelse($reports as $report)
                 <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition">
-                    <td class="px-8 py-5 font-black text-gray-800 tracking-tighter">
-                        {{ $report->tracking_number }}
-                    </td>
+                    {{-- FIXED: Now uses tracking_number instead of title --}}
+                    <td class="px-8 py-5 font-black text-gray-800 tracking-tighter">{{ $report->tracking_number }}</td>
                     
-                    <td class="px-8 py-5 text-gray-400 uppercase">{{ $report->category }}</td>
-                    <td class="px-8 py-5 font-bold text-[#00872E]">{{ $report->ward->name ?? 'N/A' }}</td>
+                    <td class="px-8 py-5">
+                        <div class="flex flex-col">
+                            <span class="text-gray-400 uppercase text-[9px] font-black">{{ $report->category }}</span>
+                            <span class="text-gray-800 font-bold uppercase truncate max-w-[150px]">{{ $report->title }}</span>
+                        </div>
+                    </td>
+
+                    <td class="px-8 py-5 font-bold text-[#00872E]">
+                        {{ $report->department->dept_name ?? 'NOT ASSIGNED' }}
+                    </td>
                     <td class="px-8 py-5">
                         <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase 
                             {{ $report->priority == 'high' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500' }}">
@@ -52,44 +108,57 @@
                         </span>
                     </td>
                     <td class="px-8 py-5">
-                        <span class="bg-[#FEDF0E] text-[#716200] px-3 py-1 rounded-full font-black text-[9px] uppercase">
+                        @php
+                            $statusColors = [
+                                'pending' => 'bg-[#FEDF0E] text-[#716200]',
+                                'dispatched' => 'bg-blue-100 text-blue-600',
+                                'in_progress' => 'bg-purple-100 text-purple-600',
+                                'resolved' => 'bg-[#00872E] text-white',
+                                'rejected' => 'bg-red-100 text-red-600'
+                            ];
+                        @endphp
+                        <span class="{{ $statusColors[$report->status] ?? 'bg-gray-100' }} px-3 py-1 rounded-full font-black text-[9px] uppercase">
                             {{ $report->status }}
                         </span>
                     </td>
                     <td class="px-8 py-5 text-right">
-                        <button onclick="openDispatchModal('{{ $report->id }}')" class="text-[#00872E] hover:underline font-black uppercase text-[10px] tracking-widest">
-                            Review & Dispatch
-                        </button>
+                        @if($report->status == 'pending')
+                            <button onclick="openDispatchModal('{{ $report->id }}', 'dispatch')" class="text-[#00872E] hover:underline font-black uppercase text-[10px] tracking-widest">
+                                Dispatch
+                            </button>
+                        @elseif($report->status != 'resolved')
+                            <button onclick="openDispatchModal('{{ $report->id }}', 'update')" class="text-blue-600 hover:underline font-black uppercase text-[10px] tracking-widest">
+                                Track Progress
+                            </button>
+                        @else
+                            <span class="text-gray-300 font-black uppercase text-[10px] tracking-widest">Archived</span>
+                        @endif
                     </td>
                 </tr>
                 @empty
                 <tr>
                     <td colspan="6" class="px-8 py-12 text-center text-gray-400 font-bold uppercase tracking-widest text-[10px]">
-                        No active incidents reported.
+                        No active incidents.
                     </td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
-        
-        <div class="p-6 bg-gray-50/30">
-            {{ $reports->links() }}
-        </div>
+        <div class="p-6 bg-gray-50/30">{{ $reports->links() }}</div>
     </div>
 </div>
 
+{{-- MODAL --}}
 <div id="dispatchModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
     <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl">
-        <h3 class="font-black text-gray-800 text-sm uppercase tracking-widest mb-6">Dispatch Incident</h3>
-        
+        <h3 id="modalTitle" class="font-black text-gray-800 text-sm uppercase tracking-widest mb-6">Dispatch Incident</h3>
         <form id="dispatchForm" method="POST">
             @csrf
             @method('PUT')
-            
             <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Target Department</label>
-                    <select name="dept_id" class="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00872E]">
+                <div id="deptSection">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Assign Department</label>
+                    <select name="dept_id" id="deptSelect" class="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00872E]">
                         <option value="">Select Department</option>
                         @foreach($departments as $dept)
                             <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
@@ -98,37 +167,95 @@
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Priority Level</label>
-                    <select name="priority" class="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00872E]">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Current Status</label>
+                    <select name="status" id="statusSelect" class="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00872E]">
+                        <option value="dispatched">Dispatched</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+
+                <div id="prioritySection">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Priority</label>
+                    <select name="priority" id="prioritySelect" class="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#00872E]">
                         <option value="low">Routine</option>
                         <option value="medium">Urgent</option>
                         <option value="high">Critical</option>
                     </select>
                 </div>
 
-                <input type="hidden" name="status" value="dispatched">
-
                 <button type="submit" class="w-full bg-[#00872E] text-white font-black py-4 rounded-2xl hover:bg-[#006D24] transition uppercase text-xs tracking-widest shadow-lg mt-4">
-                    Confirm Dispatch
+                    Confirm Action
                 </button>
-                <button type="button" onclick="closeModal()" class="w-full text-gray-400 font-bold py-2 text-[10px] uppercase tracking-widest">
-                    Cancel
-                </button>
+                <button type="button" onclick="closeModal()" class="w-full text-gray-400 font-bold py-2 text-[10px] uppercase tracking-widest">Cancel</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    function openDispatchModal(reportId) {
+    const predictor = document.getElementById('reportPredictor');
+    const list = document.getElementById('predictionList');
+    const updateForm = document.getElementById('quickUpdateForm');
+
+    predictor.addEventListener('input', function(e) {
+        let query = e.target.value;
+        if (query.length < 2) { list.classList.add('hidden'); return; }
+
+        fetch("{{ route('admin.reports.search') }}?q=" + query)
+            .then(res => res.json())
+            .then(data => {
+                list.innerHTML = '';
+                if (data.length > 0) {
+                    list.classList.remove('hidden');
+                    data.forEach(item => {
+                        let div = document.createElement('div');
+                        div.className = "p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-50 flex justify-between";
+                        // FIXED: Displaying tracking_number in search results
+                        div.innerHTML = `<span class="text-[10px] font-black uppercase text-[#00872E]">${item.tracking_number}</span><span class="text-[9px] font-bold text-gray-400 uppercase">${item.category}</span>`;
+                        div.onclick = () => {
+                            document.getElementById('quick_report_id').value = item.id;
+                            document.getElementById('targetDisplay').innerText = `Targeting: ${item.tracking_number}`;
+                            predictor.value = item.tracking_number;
+                            list.classList.add('hidden');
+                            updateForm.classList.remove('hidden');
+                        };
+                        list.appendChild(div);
+                    });
+                }
+            });
+    });
+
+    function openDispatchModal(reportId, mode) {
         const modal = document.getElementById('dispatchModal');
         const form = document.getElementById('dispatchForm');
+        const title = document.getElementById('modalTitle');
+        const deptSection = document.getElementById('deptSection');
+        const prioritySection = document.getElementById('prioritySection');
+        const statusSelect = document.getElementById('statusSelect');
+        const deptSelect = document.getElementById('deptSelect');
+        const prioritySelect = document.getElementById('prioritySelect');
+
         form.action = `/admin/reports/${reportId}`;
+        
+        if(mode === 'dispatch') {
+            title.innerText = "Dispatch Incident";
+            statusSelect.value = "dispatched";
+            deptSection.style.display = "block";
+            prioritySection.style.display = "block";
+            deptSelect.disabled = false;
+            prioritySelect.disabled = false;
+        } else {
+            title.innerText = "Update Progress";
+            deptSection.style.display = "none";
+            prioritySection.style.display = "none";
+            deptSelect.disabled = true;
+            prioritySelect.disabled = true;
+        }
         modal.classList.remove('hidden');
     }
 
-    function closeModal() {
-        document.getElementById('dispatchModal').classList.add('hidden');
-    }
+    function closeModal() { document.getElementById('dispatchModal').classList.add('hidden'); }
 </script>
 @endsection

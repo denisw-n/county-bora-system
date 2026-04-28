@@ -17,11 +17,89 @@ class ReportController extends Controller
     public function index()
     {
         $reports = Report::with(['user', 'department'])->latest()->paginate(10);
-        
-        // Fix: Fetching departments so the modal dropdowns don't crash the view
         $departments = Department::orderBy('dept_name', 'asc')->get(); 
 
         return view('admin.reports.index', compact('reports', 'departments'));
+    }
+
+    /**
+     * Self-Predicting Search logic
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('q');
+
+        $reports = Report::where('title', 'LIKE', "%{$query}%")
+                    ->orWhere('category', 'LIKE', "%{$query}%")
+                    ->select('id', 'title', 'category', 'status')
+                    ->limit(5) 
+                    ->get();
+
+        return response()->json($reports);
+    }
+
+    /**
+     * ACTION 1: Initial Dispatch & Subsequent Progress Updates
+     */
+    public function update(Request $request, $id)
+    {
+        $report = Report::findOrFail($id);
+        
+        // 'sometimes' ensures validation only runs if the field is present in the request
+        $request->validate([
+            'status' => 'required|string',
+            'priority' => 'sometimes|string',
+            'dept_id' => 'sometimes|exists:departments,id',
+        ]);
+
+        $updateData = ['status' => $request->status];
+
+        // Only update priority and dept if the admin provided them (Dispatch Phase)
+        if ($request->filled('priority')) {
+            $updateData['priority'] = $request->priority;
+        }
+
+        if ($request->filled('dept_id')) {
+            $updateData['dept_id'] = $request->dept_id;
+        }
+
+        $report->update($updateData);
+
+        AuditLog::create([
+            'admin_id' => Auth::id(),
+            'action' => "Update on {$report->title}: Status set to " . strtoupper($request->status),
+            'target_id' => $report->id, 
+            'timestamp' => now(),
+        ]);
+
+        return redirect()->route('admin.reports.index')
+            ->with('success', "Report {$report->title} has been updated successfully.");
+    }
+
+    /**
+     * ACTION 2: Quick Status-Only Update (From Search Console)
+     */
+    public function quickStatusUpdate(Request $request)
+    {
+        $request->validate([
+            'report_id' => 'required|exists:reports,id',
+            'status' => 'required|string',
+        ]);
+
+        $report = Report::findOrFail($request->report_id);
+        
+        $report->update([
+            'status' => $request->status,
+        ]);
+
+        AuditLog::create([
+            'admin_id' => Auth::id(),
+            'action' => "Quick Status Change for {$report->title} to: " . strtoupper($request->status),
+            'target_id' => $report->id, 
+            'timestamp' => now(),
+        ]);
+
+        return back()->with('success', "Report {$report->title} status updated to " . strtoupper($request->status));
     }
 
     /**
@@ -33,40 +111,5 @@ class ReportController extends Controller
         $departments = Department::all(); 
         
         return view('admin.reports.show', compact('report', 'departments'));
-    }
-
-    /**
-     * Update the report (Assigning priority/status/comments/dispatch)
-     */
-    public function update(Request $request, $id)
-    {
-        $report = Report::findOrFail($id);
-        
-        $request->validate([
-            'status' => 'required|string',
-            'priority' => 'required|string',
-            'dept_id' => 'nullable|exists:departments,id', 
-        ]);
-
-        $report->update([
-            'status' => $request->status,
-            'priority' => $request->priority,
-            'admin_comment' => $request->admin_comment,
-            'audit_remarks' => $request->audit_remarks,
-            'dept_id' => $request->dept_id,
-        ]);
-
-        // AUTOMATIC AUDIT LOG
-        $shortId = strtoupper(substr($report->id, 0, 8));
-        
-        AuditLog::create([
-            'admin_id' => Auth::id(),
-            'action' => "Dispatched report #{$shortId} to Department ID: {$request->dept_id} with status: {$request->status}",
-            'target_id' => $report->id, 
-            'timestamp' => now(),
-        ]);
-
-        return redirect()->route('admin.reports.index')
-            ->with('success', "Report #{$shortId} has been successfully updated and dispatched.");
     }
 }

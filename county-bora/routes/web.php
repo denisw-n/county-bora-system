@@ -39,6 +39,11 @@ Route::middleware(['auth'])->group(function () {
      */
     Route::prefix('admin/reports')->name('admin.reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
+        
+        // NEW: Self-predicting search and Quick Status Update
+        Route::get('/search-prediction', [ReportController::class, 'search'])->name('search');
+        Route::post('/quick-status-update', [ReportController::class, 'quickStatusUpdate'])->name('quickStatusUpdate');
+        
         Route::get('/{id}', [ReportController::class, 'show'])->name('show');
         Route::put('/{id}', [ReportController::class, 'update'])->name('update');
     });
@@ -56,16 +61,9 @@ Route::middleware(['auth'])->group(function () {
      * User Management & Verification
      */
     Route::prefix('admin/users')->name('admin.users.')->group(function () {
-        // Queue for unverified citizens
         Route::get('/verification', [UserController::class, 'verificationIndex'])->name('verification');
-        
-        // Approve/Toggle Verification
         Route::patch('/{user}/verify', [UserController::class, 'toggleVerification'])->name('verify');
-        
-        // Reject/Delete User (This was missing)
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
-        
-        // List all citizens
         Route::get('/', [UserController::class, 'index'])->name('index');
     });
 

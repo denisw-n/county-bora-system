@@ -13,25 +13,47 @@ use Illuminate\Support\Facades\DB;
 class PublicCommController extends Controller
 {
     /**
-     * Display a unified list of all communications.
+     * Display a unified list of all communications with search filtering.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // 1. Fetch public alerts
-        $broadcasts = Alert::latest()->get()->map(function($item) {
-            $item->display_scope = 'Public';
-            $item->recipient = 'All Citizens';
-            $item->display_message = $item->content;
-            return $item;
-        });
+        $search = $request->input('search');
+
+        // 1. Fetch public alerts (Filtered by title/content if searching)
+        $broadcasts = Alert::when($search, function($query) use ($search) {
+                $query->where('title', 'LIKE', "%{$search}%")
+                      ->orWhere('content', 'LIKE', "%{$search}%");
+            })
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->display_scope = 'Public';
+                $item->recipient = 'All Citizens';
+                $item->display_message = $item->content;
+                return $item;
+            });
 
         // 2. Fetch personalized notifications with user relationship
-        $personals = Notification::with('user')->latest()->get()->map(function($item) {
-            $item->display_scope = 'Personal';
-            $item->recipient = $item->user ? $item->user->first_name . ' ' . $item->user->last_name : 'Unknown Citizen';
-            $item->display_message = $item->message;
-            return $item;
-        });
+        // Filtered by Message, Title, or User details (Name, Email, National ID)
+        $personals = Notification::with('user')
+            ->when($search, function($query) use ($search) {
+                $query->where('title', 'LIKE', "%{$search}%")
+                      ->orWhere('message', 'LIKE', "%{$search}%")
+                      ->orWhereHas('user', function($u) use ($search) {
+                          $u->where('first_name', 'LIKE', "%{$search}%")
+                            ->orWhere('last_name', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%")
+                            ->orWhere('national_id', 'LIKE', "%{$search}%");
+                      });
+            })
+            ->latest()
+            ->get()
+            ->map(function($item) {
+                $item->display_scope = 'Personal';
+                $item->recipient = $item->user ? $item->user->first_name . ' ' . $item->user->last_name : 'Unknown Citizen';
+                $item->display_message = $item->message;
+                return $item;
+            });
 
         // 3. Merge and sort
         $allCommunications = $broadcasts->concat($personals)->sortByDesc('created_at');
@@ -81,18 +103,15 @@ class PublicCommController extends Controller
 
     /**
      * AJAX Search for verified citizens.
-     * Fixed to handle 'q' or 'query' parameters and scoped logic.
      */
     public function searchUsers(Request $request)
     {
-        // Capture search term from 'q' (Select2 default) or 'query'
         $term = $request->input('q') ?? $request->input('query') ?? $request->input('search');
 
         if (empty($term)) {
             return response()->json([]);
         }
 
-        // Search logic optimized for verified citizens only
         $users = User::where('role', 'citizen')
             ->where('is_verified', true)
             ->where(function($q) use ($term) {

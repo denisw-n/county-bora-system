@@ -19,6 +19,14 @@ class Notification extends Model
     ];
 
     /**
+     * The attributes that should be cast.
+     * Ensures is_read is always treated as a boolean.
+     */
+    protected $casts = [
+        'is_read' => 'boolean',
+    ];
+
+    /**
      * Get the user that receives the notification.
      */
     public function user(): BelongsTo
