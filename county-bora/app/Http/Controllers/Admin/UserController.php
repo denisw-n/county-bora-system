@@ -11,7 +11,6 @@ class UserController extends Controller
 {
     /**
      * List all citizens with pagination.
-     * Maps to: GET /admin/users
      */
     public function index()
     {
@@ -21,7 +20,7 @@ class UserController extends Controller
 
     /**
      * Display the ID verification queue.
-     * Maps to: GET /admin/users/verification
+     * Only shows users who are 'citizen' and NOT verified.
      */
     public function verificationIndex()
     {
@@ -34,37 +33,54 @@ class UserController extends Controller
     }
 
     /**
-     * Toggle user verification status (Approve or Revoke).
-     * Includes automatic notification for successful verification.
-     * Maps to: PATCH /admin/users/{user}/verify
+     * Handle user verification approval or rejection.
      */
-    public function toggleVerification(User $user)
+    public function toggleVerification(Request $request, User $user)
     {
-        $user->update([
-            'is_verified' => !$user->is_verified
-        ]);
+        $action = $request->input('action'); 
 
-        // If the user was just verified, create a notification entry
-        if ($user->is_verified) {
+        if ($action === 'approve') {
+            $user->update(['is_verified' => true]);
+
             DB::table('notifications')->insert([
                 'user_id'    => $user->id,
                 'title'      => 'Account Verified',
-                'message'    => 'Your account has been successfully verified. You now have full access to County Bora services.',
+                'message'    => 'Congratulations! Your account has been verified. You now have full access to County Bora services.',
                 'is_read'    => 0,
-                'type'       => 'General',
+                'type'       => 'Verification',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            return redirect()->back()->with('success', "Citizen verified and notified.");
+        } 
+
+        if ($action === 'reject') {
+            /** * THE FIX: Change role to 'rejected_citizen'. 
+             * This removes them from verificationIndex because the query 
+             * filters for role == 'citizen'.
+             */
+            $user->update(['role' => 'rejected_citizen']);
+
+            DB::table('notifications')->insert([
+                'user_id'    => $user->id,
+                'title'      => 'Verification Declined',
+                'message'    => 'Your ID verification was unsuccessful. Please ensure your ID photo is clear and matches your profile details.',
+                'is_read'    => 0,
+                'type'       => 'Verification',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            
+            return redirect()->back()->with('warning', "Verification rejected. User removed from queue.");
         }
 
-        $status = $user->is_verified ? 'verified and notified' : 'verification revoked';
-        
-        return redirect()->back()->with('success', "Citizen {$status} successfully.");
+        $user->update(['is_verified' => !$user->is_verified]);
+        return redirect()->back()->with('success', "Verification status updated.");
     }
 
     /**
      * Permanently remove a user account.
-     * Maps to: DELETE /admin/users/{user}
      */
     public function destroy(User $user)
     {
