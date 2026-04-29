@@ -66,32 +66,55 @@
                 <thead>
                     <tr class="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                         <th class="px-8 py-5">Organization Unit</th>
-                        <th class="px-8 py-5">Status</th>
+                        <th class="px-8 py-5 text-center">Operational Load</th>
                         <th class="px-8 py-5 text-right">Operational Actions</th>
                     </tr>
                 </thead>
                 <tbody class="text-xs font-semibold text-gray-600">
                     @forelse($departments as $dept)
-                    <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition">
-                        <td class="px-8 py-5 font-bold text-gray-800 uppercase tracking-tight">{{ $dept->dept_name }}</td>
+                    <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition group">
                         <td class="px-8 py-5">
-                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">Active</span>
+                            <a href="/admin/departments/{{ $dept->id }}" class="flex items-center gap-3 group/link">
+                                <span class="font-black text-gray-800 uppercase tracking-tight group-hover/link:text-[#00872E] transition-all">
+                                    {{ $dept->dept_name }}
+                                </span>
+                                <span class="text-[10px] opacity-0 group-hover/link:opacity-100 text-[#00872E] transition-all transform -translate-x-2 group-hover/link:translate-x-0">
+                                    →
+                                </span>
+                            </a>
                         </td>
-                        <td class="px-8 py-5 text-right flex justify-end gap-6">
-                            <button onclick="editDept('{{ $dept->id }}', '{{ $dept->dept_name }}')" class="text-[#00872E] hover:text-green-800 font-black uppercase text-[10px] tracking-widest transition">Edit</button>
-                            <form action="{{ route('admin.departments.destroy', $dept->id) }}" method="POST" onsubmit="return confirm('Confirm Decommissioning?');" class="inline">
-                                @csrf @method('DELETE')
-                                <button class="text-red-400 hover:text-red-600 font-black uppercase text-[10px] tracking-widest transition">Delete</button>
-                            </form>
+                        <td class="px-8 py-5 text-center">
+                            <div class="flex items-center justify-center gap-3">
+                                <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">Active</span>
+                                <span class="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                                    {{ $dept->reports_count ?? 0 }} Tasks
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-5 text-right">
+                            <div class="flex justify-end gap-6 items-center">
+                                <button onclick="editDept('{{ $dept->id }}', '{{ $dept->dept_name }}')" class="text-[#00872E] hover:text-green-800 font-black uppercase text-[10px] tracking-widest transition">
+                                    Edit
+                                </button>
+                                <form action="/admin/departments/{{ $dept->id }}" method="POST" onsubmit="return confirm('Confirm Decommissioning?');" class="inline">
+                                    @csrf @method('DELETE')
+                                    <button class="text-red-400 hover:text-red-600 font-black uppercase text-[10px] tracking-widest transition">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="3" class="px-8 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-[10px]">No departments found matching your criteria.</td>
+                        <td colspan="3" class="px-8 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+                            No departments found matching your criteria.
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
+            
             <div class="p-6 bg-gray-50/30">
                 {{ $departments->links() }}
             </div>

@@ -7,6 +7,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         #dashboardMap { height: 450px; width: 100%; border-radius: 1.5rem; z-index: 10; }
+        .custom-pin-dashboard { background: none; border: none; cursor: pointer; }
+        .leaflet-popup-content-wrapper { border-radius: 1rem; padding: 4px; }
     </style>
 @endpush
 
@@ -64,15 +66,11 @@
                     <div class="bg-white/10 p-5 rounded-2xl border-l-4 border-[#FEDF0E]">
                         <p class="text-[11px] font-black uppercase tracking-tight">System Status</p>
                         <p class="text-[10px] text-white/50 leading-relaxed mt-1">
-                            Admin Monolith active. Mapping {{ count($reports ?? []) }} coordinates across Nairobi wards.
+                            Admin Monolith active. Mapping {{ count($reports ?? []) }} coordinates across Nairobi.
                         </p>
                     </div>
-                    <div class="bg-white/5 p-5 rounded-2xl border-l-4 border-white/20">
-                        <p class="text-[11px] font-black uppercase tracking-tight text-white/40">Database Connectivity</p>
-                        <p class="text-[10px] text-white/30 leading-relaxed mt-1">Stable (Ping: 14ms)</p>
-                    </div>
                 </div>
-                <a href="{{ route('admin.logs.index') }}" class="mt-8 block text-center bg-[#FEDF0E] text-[#716200] text-[10px] font-black py-3 rounded-xl uppercase tracking-widest hover:opacity-90 transition">
+                <a href="{{ route('admin.reports.index') }}" class="mt-8 block text-center bg-[#FEDF0E] text-[#716200] text-[10px] font-black py-3 rounded-xl uppercase tracking-widest hover:opacity-90 transition">
                     View Full Audit Trail
                 </a>
             </div>
@@ -81,24 +79,42 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const map = L.map('dashboardMap', {
-                zoomControl: false,
-                attributionControl: false
-            }).setView([-1.286389, 36.817223], 12);
+            const map = L.map('dashboardMap', { zoomControl: false, attributionControl: false }).setView([-1.286389, 36.817223], 12);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20 }).addTo(map);
 
             const reports = @json($reports ?? []);
+            
             reports.forEach(report => {
                 if (report.latitude && report.longitude) {
-                    L.circleMarker([report.latitude, report.longitude], {
-                        radius: 8,
-                        fillColor: '#00872E',
-                        color: "#fff",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 1
-                    }).addTo(map);
+                    let color = '#EF4444'; 
+                    const statusLower = (report.status || '').toLowerCase();
+
+                    if(['assigned', 'in progress', 'in_progress', 'dispatched'].includes(statusLower)) {
+                        color = '#F59E0B';
+                    } else if(statusLower === 'resolved') {
+                        color = '#10B981';
+                    }
+
+                    const dotIcon = L.divIcon({
+                        className: 'custom-pin-dashboard',
+                        html: `<div style="background-color: ${color}; width: 12px; height: 12px; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>`,
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    });
+
+                    const marker = L.marker([report.latitude, report.longitude], { icon: dotIcon }).addTo(map);
+
+                    marker.bindPopup(`
+                        <div class="p-1 font-sans text-center">
+                            <h4 class="text-xs font-bold text-gray-800">${report.title ?? 'Incident'}</h4>
+                            <p class="text-[9px] font-black uppercase" style="color: ${color}">${report.status}</p>
+                        </div>
+                    `, { closeButton: false });
+
+                    marker.on('mouseover', function() { this.openPopup(); });
+                    marker.on('mouseout', function() { this.closePopup(); });
+                    marker.on('click', function() { window.location.href = `/admin/reports/${report.id}`; });
                 }
             });
         });

@@ -24,14 +24,19 @@ class ReportController extends Controller
 
     /**
      * Self-Predicting Search logic
+     * UPDATED: Filters out finalized reports so they don't appear in the Quick Update console.
      */
     public function search(Request $request)
     {
         $query = $request->get('q');
 
-        $reports = Report::where('title', 'LIKE', "%{$query}%")
-                    ->orWhere('category', 'LIKE', "%{$query}%")
-                    ->select('id', 'title', 'category', 'status')
+        $reports = Report::whereNotIn('status', ['resolved', 'rejected']) // Filter out locked reports
+                    ->where(function($q) use ($query) {
+                        $q->where('tracking_number', 'LIKE', "%{$query}%")
+                          ->orWhere('title', 'LIKE', "%{$query}%")
+                          ->orWhere('category', 'LIKE', "%{$query}%");
+                    })
+                    ->select('id', 'tracking_number', 'title', 'category', 'status')
                     ->limit(5) 
                     ->get();
 
@@ -45,7 +50,11 @@ class ReportController extends Controller
     {
         $report = Report::findOrFail($id);
         
-        // 'sometimes' ensures validation only runs if the field is present in the request
+        // GATEKEEPER: Block updates to finalized records
+        if ($report->status === 'resolved' || $report->status === 'rejected') {
+            return redirect()->back()->withErrors(['error' => 'Action Denied: This report is finalized and locked.']);
+        }
+
         $request->validate([
             'status' => 'required|string',
             'priority' => 'sometimes|string',
@@ -54,7 +63,6 @@ class ReportController extends Controller
 
         $updateData = ['status' => $request->status];
 
-        // Only update priority and dept if the admin provided them (Dispatch Phase)
         if ($request->filled('priority')) {
             $updateData['priority'] = $request->priority;
         }
@@ -67,13 +75,13 @@ class ReportController extends Controller
 
         AuditLog::create([
             'admin_id' => Auth::id(),
-            'action' => "Update on {$report->title}: Status set to " . strtoupper($request->status),
+            'action' => "Update on [{$report->tracking_number}]: Status set to " . strtoupper($request->status),
             'target_id' => $report->id, 
             'timestamp' => now(),
         ]);
 
         return redirect()->route('admin.reports.index')
-            ->with('success', "Report {$report->title} has been updated successfully.");
+            ->with('success', "Report {$report->tracking_number} has been updated successfully.");
     }
 
     /**
@@ -88,18 +96,23 @@ class ReportController extends Controller
 
         $report = Report::findOrFail($request->report_id);
         
+        // GATEKEEPER: Block updates to finalized records
+        if ($report->status === 'resolved' || $report->status === 'rejected') {
+            return back()->withErrors(['error' => 'This report is finalized and cannot be updated via the Quick Console.']);
+        }
+
         $report->update([
             'status' => $request->status,
         ]);
 
         AuditLog::create([
             'admin_id' => Auth::id(),
-            'action' => "Quick Status Change for {$report->title} to: " . strtoupper($request->status),
+            'action' => "Quick Status Change for [{$report->tracking_number}] to: " . strtoupper($request->status),
             'target_id' => $report->id, 
             'timestamp' => now(),
         ]);
 
-        return back()->with('success', "Report {$report->title} status updated to " . strtoupper($request->status));
+        return back()->with('success', "Report {$report->tracking_number} status updated to " . strtoupper($request->status));
     }
 
     /**
@@ -107,7 +120,7 @@ class ReportController extends Controller
      */
     public function show($id)
     {
-        $report = Report::with(['user', 'department'])->findOrFail($id);
+        $report = Report::with(['user', 'department', 'ward'])->findOrFail($id);
         $departments = Department::all(); 
         
         return view('admin.reports.show', compact('report', 'departments'));

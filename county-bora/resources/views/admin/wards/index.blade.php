@@ -62,21 +62,26 @@
                 <tbody class="text-xs font-semibold text-gray-600">
                     @forelse($wards as $ward)
                     <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition">
-                        <td class="px-8 py-5 font-bold text-gray-800 uppercase tracking-tight">{{ $ward->name }}</td>
+                        <td class="px-8 py-5 font-bold text-gray-800 uppercase tracking-tight">
+                            <a href="{{ route('admin.wards.show', $ward->id) }}" class="hover:text-[#00872E] transition-colors">
+                                {{ $ward->name }}
+                            </a>
+                        </td>
                         <td class="px-8 py-5 text-gray-400 font-bold uppercase">{{ $ward->sub_county }}</td>
                         <td class="px-8 py-5 text-center">
                             <span class="bg-[#FEDF0E] text-[#716200] px-3 py-1 rounded-full font-black text-[10px] shadow-sm">
                                 {{ $ward->reports_count ?? 0 }}
                             </span>
                         </td>
-                        <td class="px-8 py-5 text-right flex justify-end gap-4">
+                        <td class="px-8 py-5 text-right flex justify-end gap-6 items-center">
                             <button onclick="editWard('{{ $ward->id }}', '{{ $ward->name }}', '{{ $ward->sub_county }}')" 
-                                    class="text-[#00872E] hover:text-green-800 font-black uppercase text-[10px] tracking-widest">
+                                    class="text-[#00872E] hover:text-green-800 font-black uppercase text-[10px] tracking-widest transition">
                                 Edit
                             </button>
+
                             <form action="{{ route('admin.wards.destroy', $ward->id) }}" method="POST" onsubmit="return confirm('Archive this ward? This cannot be undone.');" class="inline">
                                 @csrf @method('DELETE')
-                                <button class="text-red-400 hover:text-red-600 font-black uppercase text-[10px] tracking-widest">Delete</button>
+                                <button class="text-red-400 hover:text-red-600 font-black uppercase text-[10px] tracking-widest transition">Delete</button>
                             </form>
                         </td>
                     </tr>

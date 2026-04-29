@@ -54,6 +54,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin/communication')->name('admin.communication.')->group(function () {
         Route::get('/', [PublicCommController::class, 'index'])->name('index');
         Route::post('/broadcast', [PublicCommController::class, 'broadcast'])->name('broadcast');
+        // Fixed name to match standard: users.search
         Route::get('/search-users', [PublicCommController::class, 'searchUsers'])->name('users.search');
     });
 
@@ -73,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('/admin/wards', WardController::class)->names([
         'index'   => 'admin.wards.index',
         'store'   => 'admin.wards.store',
+        'show'    => 'admin.wards.show',   // Explicitly named to fix the 500 error
         'update'  => 'admin.wards.update',
         'destroy' => 'admin.wards.destroy',
     ]);

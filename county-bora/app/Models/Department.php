@@ -32,11 +32,11 @@ class Department extends Model
     }
 
     /**
-     * Relationship: A department oversees many reports
-     * This allows us to calculate performance percentages
+     * Relationship: A department oversees many reports.
+     * FIXED: Changed 'department_id' to 'dept_id' to match your schema.
      */
     public function reports()
     {
-        return $this->hasMany(Report::class, 'department_id');
+        return $this->hasMany(Report::class, 'dept_id');
     }
 }

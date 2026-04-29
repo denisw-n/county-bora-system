@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class Report extends Model
 {
@@ -17,6 +18,7 @@ class Report extends Model
 
     protected $fillable = [
         'user_id',       
+        'ward_id',        // Added for geographic tracking
         'category',      
         'description',   
         'latitude',      
@@ -34,7 +36,18 @@ class Report extends Model
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
+
+    /**
+     * HELPER: Check if the report was resolved in the last 7 days.
+     */
+    public function isRecentlyResolved()
+    {
+        return $this->status === 'resolved' && 
+               $this->updated_at->greaterThanOrEqualTo(Carbon::now()->subDays(7));
+    }
 
     /**
      * ACCESSOR: Generates the NCC Tracking Number (First 8 chars of UUID).
@@ -58,10 +71,8 @@ class Report extends Model
 
         /**
          * PROFESSIONAL TRACKING: Automated Status Notifications
-         * Triggered whenever the report is updated in the system.
          */
         static::updated(function ($report) {
-            // Only fire if the status has actually changed (prevents spam)
             if ($report->isDirty('status')) {
                 
                 $messages = [
@@ -74,11 +85,6 @@ class Report extends Model
 
                 $statusMessage = $messages[$report->status] ?? "The status of your report has been updated to " . ucfirst($report->status);
 
-                /**
-                 * FAIL-SAFE IMPLEMENTATION:
-                 * We wrap the notification creation in a try-catch to ensure that if the 
-                 * notification table fails, the main report status update still saves.
-                 */
                 try {
                     \App\Models\Notification::create([
                         'user_id' => $report->user_id,
@@ -87,7 +93,6 @@ class Report extends Model
                         'is_read' => false,
                     ]);
                 } catch (\Exception $e) {
-                    // Log the error but allow the report update to proceed
                     Log::error("Notification failed for Report {$report->id}: " . $e->getMessage());
                 }
             }
@@ -100,6 +105,14 @@ class Report extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relationship: A report belongs to a specific geographic ward.
+     */
+    public function ward()
+    {
+        return $this->belongsTo(Ward::class, 'ward_id');
     }
 
     /**

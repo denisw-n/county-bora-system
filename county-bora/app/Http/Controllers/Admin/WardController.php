@@ -5,21 +5,40 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Ward;
 use App\Models\Report;
+use App\Models\Department;
 use Illuminate\Http\Request;
 
 class WardController extends Controller
 {
     public function index()
     {
-        $wards = Ward::latest()->paginate(10);
-
-        // Calculate reports per ward for the dashboard badges
-        $wards->getCollection()->transform(function ($ward) {
-            $ward->reports_count = Report::where('location', 'LIKE', '%' . $ward->name . '%')->count();
-            return $ward;
-        });
+        // Using withCount is much more efficient than the previous transform loop
+        $wards = Ward::withCount('reports')->latest()->paginate(10);
 
         return view('admin.wards.index', compact('wards'));
+    }
+
+    /**
+     * THE SIFTER: Displays ward details and filters reports by department
+     */
+    public function show(Request $request, $id)
+    {
+        $ward = Ward::findOrFail($id);
+        
+        // Fetch departments for the dropdown menu
+        $departments = Department::orderBy('dept_name', 'asc')->get();
+
+        // Start query for reports linked to this ward
+        $query = $ward->reports()->with('department');
+
+        // Apply department filter if selected in dropdown
+        if ($request->filled('dept_id')) {
+            $query->where('dept_id', $request->dept_id);
+        }
+
+        $reports = $query->latest()->paginate(10);
+
+        return view('admin.wards.show', compact('ward', 'reports', 'departments'));
     }
 
     public function store(Request $request)

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ward extends Model
 {
@@ -21,5 +22,14 @@ class Ward extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    /**
+     * Relationship: A ward contains many incident reports.
+     * This allows us to call $ward->reports in our controller.
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class, 'ward_id');
     }
 }
