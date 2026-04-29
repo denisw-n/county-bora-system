@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -18,7 +19,9 @@ class Report extends Model
 
     protected $fillable = [
         'user_id',       
-        'ward_id',        // Added for geographic tracking
+        'ward_id', 
+        'title',          
+        'location',       
         'category',      
         'description',   
         'latitude',      
@@ -31,8 +34,10 @@ class Report extends Model
     ];
 
     /**
-     * Cast coordinates to high-precision decimals.
+     * Include the tracking number automatically in API responses
      */
+    protected $appends = ['tracking_number'];
+
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
@@ -41,16 +46,7 @@ class Report extends Model
     ];
 
     /**
-     * HELPER: Check if the report was resolved in the last 7 days.
-     */
-    public function isRecentlyResolved()
-    {
-        return $this->status === 'resolved' && 
-               $this->updated_at->greaterThanOrEqualTo(Carbon::now()->subDays(7));
-    }
-
-    /**
-     * ACCESSOR: Generates the NCC Tracking Number (First 8 chars of UUID).
+     * ACCESSOR: Generates the Tracking Number for the UI
      */
     public function getTrackingNumberAttribute()
     {
@@ -58,29 +54,30 @@ class Report extends Model
         return "NCC-{$shortId}";
     }
 
+    public function isRecentlyResolved()
+    {
+        return $this->status === 'resolved' && 
+               $this->updated_at->greaterThanOrEqualTo(Carbon::now()->subDays(7));
+    }
+
     protected static function boot()
     {
         parent::boot();
 
-        // Auto-generate UUID for new reports
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
             }
         });
 
-        /**
-         * PROFESSIONAL TRACKING: Automated Status Notifications
-         */
         static::updated(function ($report) {
             if ($report->isDirty('status')) {
-                
                 $messages = [
                     'pending'     => "Your report has been received and is currently being processed.",
                     'dispatched'  => "Update: Your incident has been dispatched to the relevant department for action.",
-                    'in_progress' => "Action Taken: A maintenance team has been assigned and is currently working on your report.",
-                    'resolved'    => "Success! Your reported incident has been marked as Resolved. Thank you for using County Bora.",
-                    'rejected'    => "Note: Your report could not be processed at this time. Please check the dashboard for comments."
+                    'in_progress' => "Action Taken: A maintenance team has been assigned and is working on your report.",
+                    'resolved'    => "Success! Your reported incident has been marked as Resolved.",
+                    'rejected'    => "Note: Your report could not be processed. Check dashboard for comments."
                 ];
 
                 $statusMessage = $messages[$report->status] ?? "The status of your report has been updated to " . ucfirst($report->status);
@@ -100,24 +97,23 @@ class Report extends Model
     }
 
     /**
-     * Relationship: A report is submitted by a citizen.
+     * NEW: Link to the Photo References
      */
+    public function media(): HasMany
+    {
+        return $this->hasMany(ReportMedia::class, 'report_id');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relationship: A report belongs to a specific geographic ward.
-     */
     public function ward()
     {
         return $this->belongsTo(Ward::class, 'ward_id');
     }
 
-    /**
-     * Relationship: A report is assigned to a department.
-     */
     public function department()
     {
         return $this->belongsTo(Department::class, 'dept_id');

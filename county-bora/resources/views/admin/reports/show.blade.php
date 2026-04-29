@@ -45,7 +45,7 @@
                 </div>
             </div>
 
-            <div class="space-y-8">
+            <div class="space-y-12">
                 <div>
                     <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Detailed Description</h4>
                     <div class="bg-gray-50 rounded-3xl p-6 text-gray-600 leading-relaxed text-sm font-medium">
@@ -53,14 +53,40 @@
                     </div>
                 </div>
 
-                @if($report->image_path)
+                {{-- UPDATED: MULTI-IMAGE EVIDENCE GALLERY --}}
                 <div>
-                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Field Evidence</h4>
-                    <div class="rounded-[2rem] overflow-hidden border border-gray-100 shadow-inner max-h-[500px]">
-                        <img src="{{ asset('storage/' . $report->image_path) }}" class="w-full h-auto object-cover" alt="Incident Evidence">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Field Evidence Gallery</h4>
+                        <span class="text-[9px] font-black bg-gray-100 px-2 py-1 rounded text-gray-500 uppercase">{{ $report->media->count() }} Files</span>
                     </div>
+
+                    @if($report->media->count() > 0)
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            @foreach($report->media as $image)
+                                <div class="group relative aspect-square rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
+                                    <img src="{{ asset('storage/' . $image->file_path) }}" 
+                                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                         alt="Evidence">
+                                    
+                                    {{-- Lightbox / Full View Trigger --}}
+                                    <a href="{{ asset('storage/' . $image->file_path) }}" target="_blank" 
+                                       class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                        </svg>
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="bg-gray-50 border-2 border-dashed border-gray-100 rounded-[2.5rem] py-12 flex flex-col items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-200 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 00-2 2z" />
+                            </svg>
+                            <span class="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Visual Evidence Attached</span>
+                        </div>
+                    @endif
                 </div>
-                @endif
             </div>
         </div>
     </div>
@@ -95,7 +121,7 @@
 
                     <div>
                         <label class="text-[9px] font-black uppercase tracking-widest text-gray-500 block mb-2">Assign Department</label>
-                        <select name="dept_id" class="w-full bg-white/10 border-none rounded-xl px-4 py-3 text-xs font-bold focus:ring-2 focus:ring-[#FEDF0E] transition">
+                        <select name="dept_id" class="w-full bg-white/10 border-none rounded-xl px-4 py-3 text-xs font-bold focus:ring-2 focus:ring-[#FEDF0E] transition text-white">
                             <option value="" class="text-black">No Department</option>
                             @foreach($departments as $dept)
                                 <option value="{{ $dept->id }}" class="text-black" {{ $report->dept_id == $dept->id ? 'selected' : '' }}>
@@ -107,7 +133,7 @@
 
                     <div>
                         <label class="text-[9px] font-black uppercase tracking-widest text-gray-500 block mb-2">Update Workflow Status</label>
-                        <select name="status" class="w-full bg-white/10 border-none rounded-xl px-4 py-3 text-xs font-bold focus:ring-2 focus:ring-[#FEDF0E] transition">
+                        <select name="status" class="w-full bg-white/10 border-none rounded-xl px-4 py-3 text-xs font-bold focus:ring-2 focus:ring-[#FEDF0E] transition text-white">
                             <option value="pending" class="text-black" {{ $report->status == 'pending' ? 'selected' : '' }}>Pending Approval</option>
                             <option value="dispatched" class="text-black" {{ $report->status == 'dispatched' ? 'selected' : '' }}>Dispatched</option>
                             <option value="in_progress" class="text-black" {{ $report->status == 'in_progress' ? 'selected' : '' }}>In Progress</option>

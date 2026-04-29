@@ -6,17 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\AuditLog;
 use App\Models\Department;
+use App\Models\ReportMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
     /**
      * Display all reports with necessary data for the dispatch modals.
+     * Includes 'media' to ensure photos are available to the admin.
      */
     public function index()
     {
-        $reports = Report::with(['user', 'department'])->latest()->paginate(10);
+        $reports = Report::with(['user', 'department', 'media'])->latest()->paginate(10);
         $departments = Department::orderBy('dept_name', 'asc')->get(); 
 
         return view('admin.reports.index', compact('reports', 'departments'));
@@ -24,13 +27,13 @@ class ReportController extends Controller
 
     /**
      * Self-Predicting Search logic
-     * UPDATED: Filters out finalized reports so they don't appear in the Quick Update console.
+     * Filters out finalized reports so they don't appear in the Quick Update console.
      */
     public function search(Request $request)
     {
         $query = $request->get('q');
 
-        $reports = Report::whereNotIn('status', ['resolved', 'rejected']) // Filter out locked reports
+        $reports = Report::whereNotIn('status', ['resolved', 'rejected']) 
                     ->where(function($q) use ($query) {
                         $q->where('tracking_number', 'LIKE', "%{$query}%")
                           ->orWhere('title', 'LIKE', "%{$query}%")
@@ -116,13 +119,30 @@ class ReportController extends Controller
     }
 
     /**
-     * Show a specific report for review
+     * Show a specific report for review with full photo evidence gallery.
      */
     public function show($id)
     {
-        $report = Report::with(['user', 'department', 'ward'])->findOrFail($id);
+        $report = Report::with(['user', 'department', 'ward', 'media'])->findOrFail($id);
         $departments = Department::all(); 
         
         return view('admin.reports.show', compact('report', 'departments'));
+    }
+
+    /**
+     * Media Moderation: Allows Admin to remove specific images
+     */
+    public function deleteMedia($mediaId)
+    {
+        $media = ReportMedia::findOrFail($mediaId);
+        
+        // Physically delete from storage
+        if (Storage::disk('public')->exists($media->file_path)) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+        
+        $media->delete();
+
+        return back()->with('success', "Image reference removed successfully.");
     }
 }

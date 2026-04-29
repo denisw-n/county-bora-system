@@ -79,6 +79,7 @@
                 <tr class="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                     <th class="px-8 py-5">Tracking ID</th>
                     <th class="px-8 py-5">Category & Title</th>
+                    <th class="px-8 py-5 text-center">Evidence</th> {{-- NEW SYNCED COLUMN --}}
                     <th class="px-8 py-5">Assigned Dept</th>
                     <th class="px-8 py-5">Priority</th>
                     <th class="px-8 py-5">Status</th>
@@ -100,6 +101,21 @@
                             <span class="text-gray-400 uppercase text-[9px] font-black tracking-tighter">{{ $report->category }}</span>
                             <span class="text-gray-800 font-bold uppercase truncate max-w-[200px]">{{ $report->title }}</span>
                         </div>
+                    </td>
+
+                    {{-- NEW SYNCED EVIDENCE INDICATOR --}}
+                    <td class="px-8 py-5 text-center">
+                        @if($report->media->count() > 0)
+                            <div class="flex items-center justify-center gap-1.5 bg-[#00872E]/5 py-1 px-3 rounded-full border border-[#00872E]/10">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-[#00872E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span class="text-[#00872E] font-black text-[10px]">{{ $report->media->count() }}</span>
+                            </div>
+                        @else
+                            <span class="text-gray-300 text-[9px] font-black uppercase tracking-tighter italic">No Proof</span>
+                        @endif
                     </td>
 
                     <td class="px-8 py-5 font-bold text-gray-700">
@@ -134,7 +150,6 @@
                                 </svg>
                             </a>
                             
-                            {{-- LOGIC FIX: Check if status allows further updates --}}
                             @if($report->status == 'pending')
                                 <button onclick="openDispatchModal('{{ $report->id }}', 'dispatch')" class="text-[#00872E] hover:underline font-black uppercase text-[10px] tracking-widest">
                                     Dispatch
@@ -151,7 +166,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-8 py-12 text-center text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+                    <td colspan="7" class="px-8 py-12 text-center text-gray-400 font-bold uppercase tracking-widest text-[10px]">
                         No active incidents.
                     </td>
                 </tr>
