@@ -10,27 +10,28 @@ class Notification extends Model
 {
     use HasFactory;
 
+    // Since your migration uses $table->id(), the primary key is an integer
+    protected $keyType = 'int';
+    public $incrementing = true;
+
     protected $fillable = [
-        'user_id',
+        'user_id', // This is a UUID
         'title',
         'message',
         'is_read',
         'type'
     ];
 
-    /**
-     * The attributes that should be cast.
-     * Ensures is_read is always treated as a boolean.
-     */
     protected $casts = [
         'is_read' => 'boolean',
     ];
 
     /**
      * Get the user that receives the notification.
+     * Ensure it maps to the User UUID correctly.
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

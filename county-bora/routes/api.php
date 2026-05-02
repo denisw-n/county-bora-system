@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\NotificationController; // Added this import
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,19 +27,22 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    // --- Admin Verification Routes ---
-    // Note: In production, you should wrap these in a 'role:admin' middleware
+    // --- Admin & Public Utility Routes ---
     Route::get('/admin/pending-users', [AdminController::class, 'getPendingUsers']);
     Route::post('/admin/verify-user/{id}', [AdminController::class, 'verifyUser']);
 
     // --- Verified Citizen Only Routes ---
-    // This uses the alias created in bootstrap/app.php
     Route::middleware('is_verified')->group(function () {
-        // Only verified users can submit new incident reports
+        // Incident Reporting
         Route::post('/reports', [ReportController::class, 'store']);
+
+        // --- NEW: Personal Notifications ---
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
+        Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     });
     
-    // Any logged-in user can still see their own report history
+    // History
     Route::get('/my-reports', [ReportController::class, 'myReports']);
     
 });
