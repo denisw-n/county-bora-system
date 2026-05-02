@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\AdminController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,8 +26,13 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    // --- Admin Verification Routes ---
+    // Note: In production, you should wrap these in a 'role:admin' middleware
+    Route::get('/admin/pending-users', [AdminController::class, 'getPendingUsers']);
+    Route::post('/admin/verify-user/{id}', [AdminController::class, 'verifyUser']);
+
     // --- Verified Citizen Only Routes ---
-    // This uses the alias we created in bootstrap/app.php
+    // This uses the alias created in bootstrap/app.php
     Route::middleware('is_verified')->group(function () {
         // Only verified users can submit new incident reports
         Route::post('/reports', [ReportController::class, 'store']);
