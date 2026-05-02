@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
@@ -25,7 +26,7 @@ class User extends Authenticatable
 
     /**
      * The attributes that are mass assignable.
-     * Includes the new national_id_image_url for admin verification[cite: 16, 150].
+     * Includes the new national_id_image_url for admin verification.
      */
     protected $fillable = [
         'id', 
@@ -56,7 +57,16 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the personalized notifications sent TO this user[cite: 40, 42].
+     * Relationship: The Primary Ward the user resides in.
+     * Essential for displaying "Upper Hill" on the Profile Card.
+     */
+    public function ward(): BelongsTo
+    {
+        return $this->belongsTo(Ward::class, 'ward_id');
+    }
+
+    /**
+     * Get the personalized notifications sent TO this user.
      */
     public function notifications(): HasMany
     {
@@ -64,7 +74,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get only the unread personalized notifications[cite: 45].
+     * Get only the unread personalized notifications.
      */
     public function unreadNotifications(): HasMany
     {
@@ -72,7 +82,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the public alerts created BY this user (if they are an admin)[cite: 47, 52].
+     * Get the public alerts created BY this user (if they are an admin).
      */
     public function alerts(): HasMany
     {
