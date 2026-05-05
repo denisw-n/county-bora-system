@@ -53,7 +53,35 @@
                     </div>
                 </div>
 
-                {{-- UPDATED: MULTI-IMAGE EVIDENCE GALLERY --}}
+                {{-- NEW: CITIZEN RATING SECTION --}}
+                @if($report->rating)
+                <div class="bg-[#FEDF0E]/5 border border-[#FEDF0E]/20 rounded-[2rem] p-8">
+                    <h4 class="text-[10px] font-black text-[#716200] uppercase tracking-widest mb-4">Citizen Satisfaction Rating</h4>
+                    <div class="flex items-start gap-6">
+                        <div class="bg-white px-6 py-4 rounded-2xl shadow-sm border border-[#FEDF0E]/30 flex flex-col items-center">
+                            <span class="text-3xl font-black text-gray-900">{{ $report->rating->stars }}</span>
+                            <div class="flex text-[#FEDF0E] mt-1">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 {{ $i <= $report->rating->stars ? 'fill-current' : 'text-gray-200' }}" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                @endfor
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Feedback Provided</p>
+                            <p class="text-sm font-bold text-gray-800 leading-relaxed italic">
+                                "{{ $report->rating->comment ?? 'No written feedback provided.' }}"
+                            </p>
+                            <p class="text-[9px] text-gray-400 mt-2 font-bold uppercase tracking-tighter">
+                                Submitted {{ $report->rating->created_at->diffForHumans() }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                {{-- MULTI-IMAGE EVIDENCE GALLERY --}}
                 <div>
                     <div class="flex items-center justify-between mb-4">
                         <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Field Evidence Gallery</h4>

@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AlertController; 
 use App\Http\Controllers\Api\HotlineController;
 use App\Http\Controllers\Api\SpatialController;
-use App\Http\Controllers\Api\ProfileController; // Import the new Profile Controller
+use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,7 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // --- Citizen Profile (Updated to use dedicated Controller) ---
+    // --- Citizen Profile ---
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::patch('/profile/update', [ProfileController::class, 'update']);
 
@@ -34,14 +34,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/pending-users', [AdminController::class, 'getPendingUsers']);
     Route::post('/admin/verify-user/{id}', [AdminController::class, 'verifyUser']);
 
-    // --- Public Alerts (Broadcasts for all registered users) ---
+    // --- Public Alerts ---
     Route::get('/alerts', [AlertController::class, 'index']);
     Route::get('/alerts/{id}', [AlertController::class, 'show']);
 
-    // --- Hotlines (Emergency & Service Numbers) ---
+    // --- Hotlines ---
     Route::get('/hotlines', [HotlineController::class, 'index']);
 
-    // --- Spatial Data (Personalized Map View) ---
+    // --- Spatial Data ---
     Route::get('/my-map-markers', [SpatialController::class, 'getMyMapMarkers']);
 
     // --- Verified Citizen Only Routes ---
@@ -49,7 +49,12 @@ Route::middleware('auth:sanctum')->group(function () {
         // Incident Reporting
         Route::post('/reports', [ReportController::class, 'store']);
 
+        // --- NEW: Report Rating ---
+        // This allows a user to rate a specific report after resolution
+        Route::post('/reports/{id}/rate', [ReportController::class, 'rateReport']);
+
         // --- Personal Notifications ---
+        // ... (existing notification routes) ...
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);

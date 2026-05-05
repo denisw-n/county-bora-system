@@ -7,6 +7,7 @@ use App\Models\Report;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\ReportMedia;
+use App\Models\ReportRating; // Added for ratings
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -15,19 +16,42 @@ class ReportController extends Controller
 {
     /**
      * Display all reports with necessary data for the dispatch modals.
-     * Includes 'media' to ensure photos are available to the admin.
      */
     public function index()
     {
-        $reports = Report::with(['user', 'department', 'media'])->latest()->paginate(10);
+        $reports = Report::with(['user', 'department', 'media', 'rating'])->latest()->paginate(10);
         $departments = Department::orderBy('dept_name', 'asc')->get(); 
 
         return view('admin.reports.index', compact('reports', 'departments'));
     }
 
     /**
+     * NEW: Fetch all ratings for the Admin API (Mobile/JS)
+     */
+    public function getRatings()
+    {
+        $ratings = ReportRating::with([
+            'report:id,title,tracking_number,category', 
+            'user:id,name'
+        ])->latest()->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $ratings
+        ]);
+    }
+
+    /**
+     * NEW: View Ratings for Web Dashboard (Blade)
+     */
+    public function viewRatings()
+    {
+        $ratings = ReportRating::with(['report', 'user'])->latest()->paginate(15);
+        return view('admin.reports.ratings', compact('ratings'));
+    }
+
+    /**
      * Self-Predicting Search logic
-     * Filters out finalized reports so they don't appear in the Quick Update console.
      */
     public function search(Request $request)
     {
@@ -53,7 +77,6 @@ class ReportController extends Controller
     {
         $report = Report::findOrFail($id);
         
-        // GATEKEEPER: Block updates to finalized records
         if ($report->status === 'resolved' || $report->status === 'rejected') {
             return redirect()->back()->withErrors(['error' => 'Action Denied: This report is finalized and locked.']);
         }
@@ -88,7 +111,7 @@ class ReportController extends Controller
     }
 
     /**
-     * ACTION 2: Quick Status-Only Update (From Search Console)
+     * ACTION 2: Quick Status-Only Update
      */
     public function quickStatusUpdate(Request $request)
     {
@@ -99,7 +122,6 @@ class ReportController extends Controller
 
         $report = Report::findOrFail($request->report_id);
         
-        // GATEKEEPER: Block updates to finalized records
         if ($report->status === 'resolved' || $report->status === 'rejected') {
             return back()->withErrors(['error' => 'This report is finalized and cannot be updated via the Quick Console.']);
         }
@@ -119,24 +141,24 @@ class ReportController extends Controller
     }
 
     /**
-     * Show a specific report for review with full photo evidence gallery.
+     * Show a specific report with rating data included.
      */
     public function show($id)
     {
-        $report = Report::with(['user', 'department', 'ward', 'media'])->findOrFail($id);
+        // Added 'rating' to the with() array
+        $report = Report::with(['user', 'department', 'ward', 'media', 'rating'])->findOrFail($id);
         $departments = Department::all(); 
         
         return view('admin.reports.show', compact('report', 'departments'));
     }
 
     /**
-     * Media Moderation: Allows Admin to remove specific images
+     * Media Moderation
      */
     public function deleteMedia($mediaId)
     {
         $media = ReportMedia::findOrFail($mediaId);
         
-        // Physically delete from storage
         if (Storage::disk('public')->exists($media->file_path)) {
             Storage::disk('public')->delete($media->file_path);
         }

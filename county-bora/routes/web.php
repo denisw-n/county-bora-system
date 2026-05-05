@@ -40,7 +40,13 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin/reports')->name('admin.reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         
-        // NEW: Self-predicting search and Quick Status Update
+        // --- NEW: Rating & Feedback Routes ---
+        // 1. Web view for the list of ratings
+        Route::get('/ratings', [ReportController::class, 'viewRatings'])->name('ratings.view');
+        // 2. API endpoint for ratings (if needed by JS components)
+        Route::get('/ratings/data', [ReportController::class, 'getRatings'])->name('ratings.data');
+        
+        // Self-predicting search and Quick Status Update
         Route::get('/search-prediction', [ReportController::class, 'search'])->name('search');
         Route::post('/quick-status-update', [ReportController::class, 'quickStatusUpdate'])->name('quickStatusUpdate');
         
@@ -54,7 +60,6 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin/communication')->name('admin.communication.')->group(function () {
         Route::get('/', [PublicCommController::class, 'index'])->name('index');
         Route::post('/broadcast', [PublicCommController::class, 'broadcast'])->name('broadcast');
-        // Fixed name to match standard: users.search
         Route::get('/search-users', [PublicCommController::class, 'searchUsers'])->name('users.search');
     });
 
@@ -74,7 +79,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('/admin/wards', WardController::class)->names([
         'index'   => 'admin.wards.index',
         'store'   => 'admin.wards.store',
-        'show'    => 'admin.wards.show',   // Explicitly named to fix the 500 error
+        'show'    => 'admin.wards.show',
         'update'  => 'admin.wards.update',
         'destroy' => 'admin.wards.destroy',
     ]);

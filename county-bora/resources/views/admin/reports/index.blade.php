@@ -9,6 +9,8 @@
         <nav class="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
             <a href="{{ route('admin.dashboard') }}" class="py-5 hover:text-gray-900 transition">Global View</a>
             <a href="{{ route('admin.reports.index') }}" class="text-[#00872E] border-b-2 border-[#00872E] py-5">Incident Reports</a>
+            {{-- NEW RATINGS LINK --}}
+            <a href="{{ route('admin.reports.ratings.view') }}" class="py-5 hover:text-gray-900 transition">Citizen Feedback</a>
         </nav>
     </div>
 </header>
@@ -79,7 +81,7 @@
                 <tr class="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                     <th class="px-8 py-5">Tracking ID</th>
                     <th class="px-8 py-5">Category & Title</th>
-                    <th class="px-8 py-5 text-center">Evidence</th> {{-- NEW SYNCED COLUMN --}}
+                    <th class="px-8 py-5 text-center">Evidence</th>
                     <th class="px-8 py-5">Assigned Dept</th>
                     <th class="px-8 py-5">Priority</th>
                     <th class="px-8 py-5">Status</th>
@@ -103,7 +105,6 @@
                         </div>
                     </td>
 
-                    {{-- NEW SYNCED EVIDENCE INDICATOR --}}
                     <td class="px-8 py-5 text-center">
                         @if($report->media->count() > 0)
                             <div class="flex items-center justify-center gap-1.5 bg-[#00872E]/5 py-1 px-3 rounded-full border border-[#00872E]/10">

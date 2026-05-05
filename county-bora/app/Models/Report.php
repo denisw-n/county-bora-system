@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne; // Added for the rating
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -102,6 +103,14 @@ class Report extends Model
     public function media(): HasMany
     {
         return $this->hasMany(ReportMedia::class, 'report_id');
+    }
+
+    /**
+     * NEW: Link to User Rating/Feedback
+     */
+    public function rating(): HasOne
+    {
+        return $this->hasOne(ReportRating::class, 'report_id');
     }
 
     public function user()
