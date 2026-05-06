@@ -5,14 +5,40 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\ReportMedia;
-use App\Models\ReportRating; // Import the Rating model
+use App\Models\ReportRating;
+use App\Models\Department; // ✅ ADDED
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
+    /**
+     * PUBLIC: Fetch departments (for dropdown)
+     */
+    public function getDepartments()
+    {
+        try {
+            $departments = Department::all();
+
+            // Ensure compatibility with Flutter (dept_name)
+            $formatted = $departments->map(function ($dept) {
+                return [
+                    'id' => $dept->id,
+                    'dept_name' => $dept->dept_name ?? $dept->name ?? 'Unknown'
+                ];
+            });
+
+            return response()->json($formatted, 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to fetch departments',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * CITIZEN: Submit a new report.
      */
@@ -27,7 +53,7 @@ class ReportController extends Controller
             'latitude'    => 'nullable|numeric',
             'longitude'   => 'nullable|numeric',
             'images'      => 'nullable|array',
-            'images.*'    => 'image|mimes:jpeg,png,jpg|max:10240', 
+            'images.*'    => 'image|mimes:jpeg,png,jpg|max:10240',
         ]);
 
         if ($validator->fails()) {
@@ -37,7 +63,7 @@ class ReportController extends Controller
         $user = Auth::user();
 
         $report = Report::create([
-            'user_id'     => $user->id, 
+            'user_id'     => $user->id,
             'ward_id'     => $request->ward_id ?? $user->ward_id,
             'title'       => $request->title,
             'location'    => $request->location,
@@ -71,11 +97,10 @@ class ReportController extends Controller
 
     /**
      * CITIZEN: Fetch reports for the logged-in user.
-     * Includes the 'rating' so the UI knows if it has been rated.
      */
     public function myReports(Request $request)
     {
-        $query = Report::with(['media', 'ward', 'rating']) // Added 'rating'
+        $query = Report::with(['media', 'ward', 'rating'])
             ->where('user_id', Auth::id())
             ->latest();
 
@@ -106,12 +131,10 @@ class ReportController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Find the report and ensure it belongs to the authenticated user
         $report = Report::where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        // Check if report is resolved
         if ($report->status !== 'resolved') {
             return response()->json([
                 'status' => 'error',
@@ -119,7 +142,6 @@ class ReportController extends Controller
             ], 403);
         }
 
-        // Check if already rated
         if ($report->rating()->exists()) {
             return response()->json([
                 'status' => 'error',
@@ -141,3 +163,4 @@ class ReportController extends Controller
         ], 201);
     }
 }
+

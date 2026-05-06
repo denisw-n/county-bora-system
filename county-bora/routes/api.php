@@ -17,11 +17,24 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Public routes
+// --- PUBLIC ROUTES ---
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes (Requires Bearer Token)
+/**
+ * FETCH WARDS
+ * Moved here to allow the Flutter RegisterScreen to populate 
+ * the Ward dropdown before a user is authenticated.
+ */
+Route::get('/wards', [SpatialController::class, 'getWards']); 
+
+/**
+ * DEPARTMENTS AS CATEGORIES (NOW PUBLIC)
+ * Allows ReportIssueScreen to fetch categories without authentication.
+ */
+Route::get('/departments', [ReportController::class, 'getDepartments']); 
+
+// --- PROTECTED ROUTES (Requires Bearer Token) ---
 Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -50,11 +63,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/reports', [ReportController::class, 'store']);
 
         // --- NEW: Report Rating ---
-        // This allows a user to rate a specific report after resolution
         Route::post('/reports/{id}/rate', [ReportController::class, 'rateReport']);
 
         // --- Personal Notifications ---
-        // ... (existing notification routes) ...
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
@@ -64,3 +75,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-reports', [ReportController::class, 'myReports']);
     
 });
+
