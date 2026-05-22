@@ -7,12 +7,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
     /**
-     * Handle Citizen Registration with ID Photo
+     * REGISTER
      */
     public function register(Request $request)
     {
@@ -22,86 +21,87 @@ class AuthController extends Controller
             'last_name'         => 'required|string|max:255',
             'email'             => 'required|string|email|max:255|unique:users',
             'national_id'       => 'required|string|unique:users',
-            'national_id_image' => 'required|image|mimes:jpeg,png,jpg|max:10240', // 10MB Limit
+            'national_id_image' => 'required|image|mimes:jpeg,png,jpg|max:10240',
             'phone_number'      => 'required|string|unique:users',
             'password'          => 'required|string|min:8|confirmed',
             'ward_id'           => 'required|uuid|exists:wards,id',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        // 1. Handle the ID image storage
         $idImagePath = null;
+
         if ($request->hasFile('national_id_image')) {
-            // Stores in storage/app/public/identity_docs
-            $idImagePath = $request->file('national_id_image')->store('identity_docs', 'public');
+            $idImagePath = $request->file('national_id_image')
+                ->store('identity_docs', 'public');
         }
 
-        // 2. Create the User (UUID is handled by User Model boot method)
         $user = User::create([
             'first_name'            => $request->first_name,
             'middle_name'           => $request->middle_name,
             'last_name'             => $request->last_name,
             'email'                 => $request->email,
             'national_id'           => $request->national_id,
-            'national_id_image_url' => $idImagePath, 
+            'national_id_image_url' => $idImagePath,
             'phone_number'          => $request->phone_number,
             'ward_id'               => $request->ward_id,
             'password'              => Hash::make($request->password),
             'role'                  => 'citizen',
-            'is_verified'           => false, 
+            'is_verified'           => false,
         ]);
 
         return response()->json([
-            'message' => 'Registration successful. Please wait for admin verification before logging in.',
+            'message' => 'Registration successful. Await admin verification.',
             'user' => $user
         ], 201);
     }
 
     /**
-     * Handle Citizen Login
+     * LOGIN (FIXED FOR FLUTTER)
      */
     public function login(Request $request)
     {
         $request->validate([
-            'login' => 'required|string', // Email or National ID
+            'login' => 'required|string',
             'password' => 'required|string',
             'device_name' => 'required|string',
         ]);
 
-        $loginField = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'national_id';
+        $loginField = filter_var($request->login, FILTER_VALIDATE_EMAIL)
+            ? 'email'
+            : 'national_id';
 
         $user = User::where($loginField, $request->login)->first();
 
-        // 1. Validate Credentials
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'The provided credentials do not match our records.'
+                'message' => 'Invalid credentials'
             ], 401);
         }
 
-        // 2. Verification Gate
         if (!$user->is_verified) {
             return response()->json([
                 'status' => 'pending_verification',
-                'message' => 'Your account is pending approval by Nairobi County Admins. Please try again once verified.'
+                'message' => 'Account pending admin approval'
             ], 403);
         }
 
-        // 3. Issue Token
         $token = $user->createToken($request->device_name)->plainTextToken;
 
         return response()->json([
-            'message' => 'Login successful',
-            'token' => $token,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
             'user' => $user
         ], 200);
     }
 
     /**
-     * Handle Citizen Logout
+     * LOGOUT
      */
     public function logout(Request $request)
     {
