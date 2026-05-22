@@ -14,23 +14,30 @@ void main() async {
   final String? token = prefs.getString('auth_token');
   final String? userJson = prefs.getString('user_data');
 
+  // Verify both exist for a valid session
+  bool hasValidSession = token != null && userJson != null;
   Map<String, dynamic>? userData;
 
-  if (token != null && userJson != null) {
+  if (hasValidSession) {
     try {
-      userData = jsonDecode(userJson);
+      userData = jsonDecode(userJson!);
     } catch (e) {
       await prefs.clear();
+      hasValidSession = false; // Reset if data is corrupt
     }
   }
 
-  runApp(CountyBoraApp(initialUserData: userData));
+  runApp(CountyBoraApp(
+      initialUserData: userData,
+      isLoggedIn: hasValidSession
+  ));
 }
 
 class CountyBoraApp extends StatelessWidget {
   final Map<String, dynamic>? initialUserData;
+  final bool isLoggedIn;
 
-  const CountyBoraApp({super.key, this.initialUserData});
+  const CountyBoraApp({super.key, this.initialUserData, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +45,7 @@ class CountyBoraApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'County Bora',
-      navigatorKey: navigatorKey,
+      navigatorKey: navigatorKey, // Navigation context is now global
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -47,8 +54,9 @@ class CountyBoraApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      // Define initial route
-      initialRoute: initialUserData != null ? '/dashboard' : '/login',
+
+      // Use the boolean flag to decide start point
+      initialRoute: isLoggedIn ? '/dashboard' : '/login',
 
       routes: {
         '/login': (context) => const LoginScreen(),
@@ -57,14 +65,15 @@ class CountyBoraApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         if (settings.name == '/dashboard') {
           final args = settings.arguments as Map<dynamic, dynamic>?;
-          final activeData = args ?? initialUserData ?? {};
+          // Ensure we have data; fallback to initialUserData if route args are empty
+          final activeData = args != null
+              ? Map<String, dynamic>.from(args)
+              : (initialUserData ?? {});
 
           return MaterialPageRoute(
             builder: (context) => DashboardScreen(userData: activeData),
           );
         }
-
-        // Fallback safety route
         return MaterialPageRoute(builder: (context) => const LoginScreen());
       },
     );

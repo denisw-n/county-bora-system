@@ -6,7 +6,8 @@ import 'reports_history_screen.dart';
 import 'report_details_screen.dart';
 import 'hotlines_screen.dart';
 import 'alerts_screen.dart';
-import 'notifications_screen.dart'; // ✅ Added import for Notifications
+import 'notifications_screen.dart';
+import '../main.dart'; // Ensure this allows access to navigatorKey
 
 class DashboardScreen extends StatefulWidget {
   final Map<dynamic, dynamic> userData;
@@ -17,13 +18,13 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   final ApiService _apiService = ApiService();
   String _authToken = '';
   Map<String, dynamic> _userProfile = {};
   bool _isLoading = true;
   late Future<List<dynamic>> _recentReportsFuture;
-  int _unreadCount = 0; // ✅ Added unread count state
+  int _unreadCount = 0;
 
   final Color _countyGreen = const Color(0xFF008444);
   final Color _cardGrey = const Color(0xFFF5F5F5);
@@ -32,7 +33,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _initializeData());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _verifySession();
+    }
+  }
+
+  Future<void> _verifySession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+    }
   }
 
   void _initializeData() async {
@@ -50,7 +73,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         token = prefs.getString('auth_token') ?? '';
       }
 
-      // ✅ Fetch unread count
       int count = await _apiService.getUnreadNotificationCount();
 
       if (mounted) {
@@ -65,12 +87,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _handleLogout() async {
-    await _apiService.logout();
-    if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   @override
@@ -91,7 +107,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
-          // ✅ Updated Notification Icon with navigation
           IconButton(
             icon: Stack(
               children: [
@@ -131,7 +146,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Text("Jambo, ${_userProfile['first_name'] ?? 'Citizen'}!", style: const TextStyle(fontSize: 16, color: Colors.grey)),
               const Text("What would you like to do today?", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
-
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(color: _countyGreen, borderRadius: BorderRadius.circular(15)),
@@ -148,7 +162,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 25),
-
               Row(children: [
                 Expanded(child: _buildActionCard("Reports History", Icons.history, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())))),
                 const SizedBox(width: 15),
@@ -160,7 +173,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 15),
                 Expanded(child: _buildActionCard("Alerts", Icons.notifications_active, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AlertsScreen())))),
               ]),
-
               const SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -173,7 +185,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 5),
-
               FutureBuilder<List<dynamic>>(
                 future: _recentReportsFuture,
                 builder: (context, snapshot) {

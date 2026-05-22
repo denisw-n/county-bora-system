@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../main.dart'; // Ensure this points to your file containing the navigatorKey
 
 class ApiService {
   // Centralized base URL updated for the new network profile
@@ -18,6 +19,18 @@ class ApiService {
       'Authorization': 'Bearer ${token?.trim()}',
       'X-Requested-With': 'XMLHttpRequest',
     };
+  }
+
+  // =========================
+  // SESSION HANDLER (NEW)
+  // =========================
+  Future<bool> _handle401(http.Response response) async {
+    if (response.statusCode == 401) {
+      await logout();
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+      return true;
+    }
+    return false;
   }
 
   // =========================
@@ -73,6 +86,7 @@ class ApiService {
         headers: headers,
       );
 
+      if (await _handle401(response)) return [];
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return body['data'] ?? [];
@@ -95,6 +109,7 @@ class ApiService {
         headers: headers,
       );
 
+      if (await _handle401(response)) return [];
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return body['alerts'] ?? [];
@@ -117,6 +132,7 @@ class ApiService {
         headers: headers,
       );
 
+      if (await _handle401(response)) return [];
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return body['notifications'] ?? [];
@@ -131,10 +147,11 @@ class ApiService {
   Future<void> markNotificationAsRead(int id) async {
     try {
       final headers = await _getAuthHeaders();
-      await http.patch(
+      final response = await http.patch(
         Uri.parse('$baseUrl/notifications/$id/read'),
         headers: headers,
       );
+      await _handle401(response);
     } catch (e) {
       debugPrint("❌ MARK AS READ ERROR: $e");
     }
@@ -148,6 +165,7 @@ class ApiService {
         headers: headers,
       );
 
+      if (await _handle401(response)) return 0;
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return body['unread_count'] ?? 0;
@@ -288,6 +306,7 @@ class ApiService {
         headers: headers,
       );
 
+      if (await _handle401(response)) return [];
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return body['data'] ?? [];
@@ -310,6 +329,7 @@ class ApiService {
         headers: headers,
       );
 
+      if (await _handle401(response)) return [];
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         return body['data'] ?? [];
