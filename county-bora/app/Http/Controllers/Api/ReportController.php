@@ -118,6 +118,29 @@ class ReportController extends Controller
     }
 
     /**
+     * CITIZEN: Fetch a single report by ID.
+     */
+    public function show($id)
+    {
+        $report = Report::with(['media', 'ward', 'rating'])
+            ->where('id', $id)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$report) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Report not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $report
+        ], 200);
+    }
+
+    /**
      * CITIZEN: Rate a resolved report.
      */
     public function rateReport(Request $request, $id)
@@ -163,4 +186,3 @@ class ReportController extends Controller
         ], 201);
     }
 }
-

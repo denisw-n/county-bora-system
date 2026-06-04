@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// --- FORGOT PASSWORD & RESET PASSWORD ---
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
 /**
  * FETCH WARDS
  * Moved here to allow the Flutter RegisterScreen to populate 
@@ -74,5 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // History
     Route::get('/my-reports', [ReportController::class, 'myReports']);
     
+    // NEW: Fetch single report details
+    Route::get('/my-reports/{id}', [ReportController::class, 'show']);
+    
 });
-

@@ -9,10 +9,13 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, CanResetPassword;
 
     /**
      * Disable auto-incrementing since we use UUIDs.
@@ -42,6 +45,27 @@ class User extends Authenticatable
         'role', 
         'is_verified'
     ];
+
+    /**
+     * Override the default password reset notification to use a 
+     * Deep Link instead of a web route.
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $url = "countybora://reset-password?token=$token&email={$this->email}";
+
+        $notification = new ResetPasswordNotification($token);
+        
+        $notification->toMailUsing(function ($notifiable, $token) use ($url) {
+            return (new MailMessage)
+                ->subject('Reset Your Password')
+                ->line('You are receiving this email because we received a password reset request for your account.')
+                ->action('Reset Password', $url)
+                ->line('If you did not request a password reset, no further action is required.');
+        });
+
+        $this->notify($notification);
+    }
 
     /**
      * Boot function to handle UUID generation on creation.
