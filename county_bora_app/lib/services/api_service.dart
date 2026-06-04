@@ -3,11 +3,43 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main.dart'; // Ensure this points to your file containing the navigatorKey
+import '../config/api_constants.dart';
+import '../main.dart';
 
 class ApiService {
-  // Centralized base URL updated for the new network profile
-  final String baseUrl = "http://192.168.43.123:8000/api";
+  final String baseUrl = ApiConstants.baseUrl;
+
+  // This helper correctly fixes image paths for you
+  String getImageUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http')) return path;
+    // This uses the root URL without the '/api' part
+    return '${ApiConstants.storageUrl}/storage/$path';
+  }
+
+  // =========================
+  // FORGOT PASSWORD
+  // =========================
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/forgot-password'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: jsonEncode({'email': email}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {'error': 'Failed to send link. Please check your email.'};
+      }
+    } catch (e) {
+      return {'error': 'Connection error: $e'};
+    }
+  }
 
   // =========================
   // AUTH HEADERS
@@ -22,7 +54,7 @@ class ApiService {
   }
 
   // =========================
-  // SESSION HANDLER (NEW)
+  // SESSION HANDLER
   // =========================
   Future<bool> _handle401(http.Response response) async {
     if (response.statusCode == 401) {
@@ -52,6 +84,97 @@ class ApiService {
     await prefs.remove('auth_token');
     await prefs.remove('user_data');
     debugPrint("🚪 SESSION CLEARED");
+  }
+
+  // =========================
+  // MAP MARKERS
+  // =========================
+  Future<Map<String, dynamic>> getMyMapMarkers() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/my-map-markers'),
+        headers: headers,
+      );
+
+      if (await _handle401(response)) return {'status': 'error', 'data': []};
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'status': 'error', 'data': []};
+    } catch (e) {
+      debugPrint("❌ MAP MARKERS ERROR: $e");
+      return {'status': 'error', 'data': []};
+    }
+  }
+
+  // =========================
+  // FETCH SINGLE REPORT BY ID
+  // =========================
+  Future<Map<String, dynamic>> getReportById(String reportId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final url = Uri.parse('$baseUrl/my-reports/$reportId');
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode != 200) {
+        debugPrint("❌ API ERROR: Status Code ${response.statusCode}");
+        debugPrint("❌ URL TRIED: $url");
+        throw Exception('Failed to load report. Status: ${response.statusCode}');
+      }
+
+      final body = jsonDecode(response.body);
+      return Map<String, dynamic>.from(body['data'] ?? {});
+    } catch (e) {
+      debugPrint("❌ FETCH REPORT BY ID ERROR: $e");
+      rethrow;
+    }
+  }
+
+  // =========================
+  // PROFILE
+  // =========================
+  Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile'),
+        headers: headers,
+      );
+
+      if (await _handle401(response)) return {'error': 'Unauthorized'};
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['data'];
+      }
+      return {'error': 'Failed to load profile'};
+    } catch (e) {
+      return {'error': 'Connection error: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    String? phoneNumber,
+    String? wardId,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
+      final body = <String, String>{};
+      if (phoneNumber != null) body['phone_number'] = phoneNumber;
+      if (wardId != null) body['ward_id'] = wardId;
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/profile/update'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (await _handle401(response)) return {'error': 'Unauthorized'};
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Update failed: $e'};
+    }
   }
 
   // =========================
@@ -296,7 +419,7 @@ class ApiService {
   }
 
   // =========================
-  // FETCH RECENT REPORTS (Limit 5)
+  // FETCH RECENT REPORTS
   // =========================
   Future<List<dynamic>> getMyRecentReports({int limit = 5}) async {
     try {
@@ -319,7 +442,7 @@ class ApiService {
   }
 
   // =========================
-  // FETCH ALL REPORTS (No Limit)
+  // FETCH ALL REPORTS
   // =========================
   Future<List<dynamic>> getAllReports() async {
     try {

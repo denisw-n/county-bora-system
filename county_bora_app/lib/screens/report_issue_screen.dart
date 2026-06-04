@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
 
+import '../config/api_constants.dart';
+
 class ReportIssueScreen extends StatefulWidget {
   final String token;
   final Map<String, dynamic> userData;
@@ -43,8 +45,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   Future<void> _fetchDepartments() async {
     try {
       final response = await http.get(
-        // ✅ UPDATED: Changed IP address to point to the new network interface
-        Uri.parse("http://192.168.43.123:8000/api/departments"),
+        Uri.parse("http://${ApiConstants.baseUrl}:8000/api/departments"),
         headers: {
           'Authorization': 'Bearer ${widget.token.trim()}',
           'Accept': 'application/json',
@@ -127,8 +128,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // ✅ UPDATED: Changed IP address to point to the new network interface
-      final uri = Uri.parse("http://192.168.43.123:8000/api/reports");
+      final uri = Uri.parse("http://${ApiConstants.baseUrl}:8000/api/reports");
       var request = http.MultipartRequest('POST', uri);
 
       request.headers.addAll({
@@ -388,15 +388,36 @@ class _FullMapPickerState extends State<FullMapPicker> {
               ]),
             ],
           ),
+          // Instruction Header
+          Positioned(
+            top: 15,
+            left: 15,
+            right: 15,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+              ),
+              child: const Text(
+                "Tap anywhere on the map to pin your location manually.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: primaryGreen),
+              ),
+            ),
+          ),
+          // Locate Me Button
           Positioned(
             bottom: 30,
             right: 20,
-            child: FloatingActionButton(
+            child: FloatingActionButton.extended(
               onPressed: _isLocating ? null : _handleLocateMe,
               backgroundColor: primaryGreen,
-              child: _isLocating
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Icon(Icons.my_location, color: Colors.white, size: 28),
+              icon: _isLocating
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.my_location, color: Colors.white),
+              label: const Text("Locate Me", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],

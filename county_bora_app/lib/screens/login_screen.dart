@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import '../services/api_service.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart'; // Added this import
 import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -131,6 +132,24 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Widget _buildForgotPasswordLink() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: TextButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+          );
+        },
+        child: Text(
+          "Forgot Password?",
+          style: TextStyle(color: _countyGreen),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRegisterLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -249,7 +268,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
 
-                  const SizedBox(height: 30),
+                  _buildForgotPasswordLink(), // Added this line
+
+                  const SizedBox(height: 10), // Adjusted spacing
 
                   SizedBox(
                     width: double.infinity,

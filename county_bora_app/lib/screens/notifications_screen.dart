@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // 1. Added intl import
 import '../services/api_service.dart';
 import 'notification_details_screen.dart';
 
@@ -21,6 +22,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     _refreshNotifications();
+  }
+
+  // 2. Added date formatting helper
+  String _formatDate(String? dateString) {
+    if (dateString == null) return "Just now";
+    try {
+      DateTime dateTime = DateTime.parse(dateString);
+      return DateFormat('MMM d, h:mm a').format(dateTime);
+    } catch (e) {
+      return "Recent";
+    }
   }
 
   void _refreshNotifications() {
@@ -91,7 +103,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Local City Hall Asset Image
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.asset(
@@ -106,7 +117,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
             ),
-            // Card Content
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -129,7 +139,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             color: status.contains('SUCCESS') ? Colors.green[800] : Colors.black87
                         )),
                       ),
-                      Text("Just now", style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                      // 3. Replaced "Just now" with formatted date
+                      Text(
+                          _formatDate(note['created_at']),
+                          style: TextStyle(fontSize: 10, color: Colors.grey[500])
+                      ),
                     ],
                   ),
                   const SizedBox(height: 10),

@@ -7,7 +7,9 @@ import 'report_details_screen.dart';
 import 'hotlines_screen.dart';
 import 'alerts_screen.dart';
 import 'notifications_screen.dart';
-import '../main.dart'; // Ensure this allows access to navigatorKey
+import 'profile_screen.dart';
+import 'map_view_screen.dart';
+import '../main.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Map<dynamic, dynamic> userData;
@@ -27,7 +29,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   int _unreadCount = 0;
 
   final Color _countyGreen = const Color(0xFF008444);
-  final Color _cardGrey = const Color(0xFFF5F5F5);
+  final Color _bgColor = const Color(0xFFE8EFE8); // Darkened sage-grey background
+  final Color _cardColor = Colors.white; // Solid white cards for clarity
   final Color _accentYellow = const Color(0xFFFFD700);
 
   @override
@@ -94,9 +97,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _bgColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Row(
@@ -127,7 +130,10 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
           ),
           Padding(
             padding: const EdgeInsets.only(right: 10),
-            child: CircleAvatar(backgroundColor: _cardGrey, child: const Icon(Icons.person, color: Colors.grey)),
+            child: GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
+              child: CircleAvatar(backgroundColor: _countyGreen.withOpacity(0.1), child: Icon(Icons.person, color: _countyGreen)),
+            ),
           )
         ],
       ),
@@ -148,7 +154,11 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(color: _countyGreen, borderRadius: BorderRadius.circular(15)),
+                decoration: BoxDecoration(
+                    color: _countyGreen,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [BoxShadow(color: _countyGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                ),
                 child: Row(
                   children: [
                     const Icon(Icons.bar_chart, color: Colors.white, size: 40),
@@ -163,15 +173,15 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               ),
               const SizedBox(height: 25),
               Row(children: [
-                Expanded(child: _buildActionCard("Reports History", Icons.history, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())))),
+                Expanded(child: _buildActionCard("Reports History", Icons.history, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())))),
                 const SizedBox(width: 15),
-                Expanded(child: _buildActionCard("Hotlines", Icons.call, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HotlinesScreen())))),
+                Expanded(child: _buildActionCard("Hotlines", Icons.call, Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HotlinesScreen())))),
               ]),
               const SizedBox(height: 15),
               Row(children: [
-                Expanded(child: _buildActionCard("Map View", Icons.map, () {})),
+                Expanded(child: _buildActionCard("Map View", Icons.map, Colors.purple, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MapViewScreen())))),
                 const SizedBox(width: 15),
-                Expanded(child: _buildActionCard("Alerts", Icons.notifications_active, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AlertsScreen())))),
+                Expanded(child: _buildActionCard("Alerts", Icons.notifications_active, Colors.red, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AlertsScreen())))),
               ]),
               const SizedBox(height: 30),
               Row(
@@ -216,7 +226,11 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: _cardGrey, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+            color: _cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))]
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -235,14 +249,18 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _buildActionCard(String title, IconData icon, VoidCallback onTap) {
+  Widget _buildActionCard(String title, IconData icon, Color iconColor, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: _cardGrey, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+            color: _cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))]
+        ),
         child: Column(children: [
-          Icon(icon, color: _countyGreen),
+          Icon(icon, color: iconColor, size: 28),
           const SizedBox(height: 10),
           Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
         ]),
