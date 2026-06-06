@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AlertController;
 use App\Http\Controllers\Api\HotlineController;
 use App\Http\Controllers\Api\SpatialController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ReportRatingController; // Imported the new controller
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -66,8 +67,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Incident Reporting
         Route::post('/reports', [ReportController::class, 'store']);
 
-        // --- NEW: Report Rating ---
-        Route::post('/reports/{id}/rate', [ReportController::class, 'rateReport']);
+        // --- UPDATED: Report Rating ---
+        Route::post('/reports/{id}/rate', [ReportRatingController::class, 'store']);
 
         // --- Personal Notifications ---
         Route::get('/notifications', [NotificationController::class, 'index']);

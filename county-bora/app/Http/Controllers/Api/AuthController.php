@@ -114,12 +114,17 @@ class AuthController extends Controller
             return response()->json(['message' => 'If this email exists, a reset link has been sent.'], 200);
         }
 
-        // Send the password reset notification
-        $user->sendPasswordResetNotification(
-            Password::createToken($user)
-        );
+        try {
+            // Send the password reset notification
+            $user->sendPasswordResetNotification(
+                Password::createToken($user)
+            );
 
-        return response()->json(['message' => 'If this email exists, a reset link has been sent.'], 200);
+            return response()->json(['message' => 'If this email exists, a reset link has been sent.'], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
