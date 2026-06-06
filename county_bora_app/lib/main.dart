@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/reset_password_screen.dart'; // Added import for your screen
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:app_links/app_links.dart';
 
 // Global key used for navigation outside of BuildContexts
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Deep Link listener
+  final appLinks = AppLinks();
+  appLinks.uriLinkStream.listen((uri) {
+    if (uri.scheme == 'countybora' && uri.host == 'reset-password') {
+      final token = uri.queryParameters['token'];
+      final email = uri.queryParameters['email'];
+
+      // Navigate to a reset screen (create this screen in your project)
+      navigatorKey.currentState?.pushNamed('/reset-password', arguments: {
+        'token': token,
+        'email': email
+      });
+    }
+  });
 
   final prefs = await SharedPreferences.getInstance();
   final String? token = prefs.getString('auth_token');
@@ -60,6 +77,8 @@ class CountyBoraApp extends StatelessWidget {
 
       routes: {
         '/login': (context) => const LoginScreen(),
+        // Replaced Container() with your actual ResetPasswordScreen widget
+        '/reset-password': (context) => const ResetPasswordScreen(),
       },
 
       onGenerateRoute: (settings) {

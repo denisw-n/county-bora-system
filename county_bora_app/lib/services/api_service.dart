@@ -463,4 +463,32 @@ class ApiService {
       return [];
     }
   }
+
+  // =========================
+  // SUBMIT RATING
+  // =========================
+  Future<Map<String, dynamic>> submitReportRating(String reportId, int rating, {String comment = ''}) async {
+    try {
+      final headers = await _getAuthHeaders();
+      headers['Content-Type'] = 'application/json';
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/reports/$reportId/rate'),
+        headers: headers,
+        body: jsonEncode({
+          'stars': rating,
+          'comment': comment
+        }),
+      );
+
+      if (await _handle401(response)) {
+        return {'status': 'error', 'message': 'Unauthorized'};
+      }
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      debugPrint("❌ SUBMIT RATING ERROR: $e");
+      return {'status': 'error', 'message': 'Connection error: $e'};
+    }
+  }
 }

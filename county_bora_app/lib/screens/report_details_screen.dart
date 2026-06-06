@@ -1,13 +1,47 @@
 import 'package:flutter/material.dart';
 import '../config/api_constants.dart';
-import '../services/api_service.dart'; // Added this import
+import '../services/api_service.dart';
 
-class ReportDetailsScreen extends StatelessWidget {
+class ReportDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> report;
-
   const ReportDetailsScreen({super.key, required this.report});
 
-  // Helper for status colors
+  @override
+  State<ReportDetailsScreen> createState() => _ReportDetailsScreenState();
+}
+
+class _ReportDetailsScreenState extends State<ReportDetailsScreen> {
+  int _rating = 0;
+  bool _isSubmitting = false;
+  final TextEditingController _commentController = TextEditingController();
+
+  Future<void> _submitRating() async {
+    setState(() => _isSubmitting = true);
+
+    // FIX: Get the ID as a String to correctly handle UUIDs
+    final String reportId = widget.report['id'].toString();
+
+    // Pass the String reportId and comment to the API service
+    final result = await ApiService().submitReportRating(
+      reportId,
+      _rating,
+      comment: _commentController.text,
+    );
+
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? "Rating submitted successfully!")),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'resolved': return Colors.green;
@@ -18,8 +52,8 @@ class ReportDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> mediaList = report['media'] ?? [];
-    final String status = report['status']?.toString().toUpperCase() ?? 'PENDING';
+    final List<dynamic> mediaList = widget.report['media'] ?? [];
+    final String status = widget.report['status']?.toString().toUpperCase() ?? 'PENDING';
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -34,7 +68,6 @@ class ReportDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card - Now Pale Yellow
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -46,9 +79,9 @@ class ReportDetailsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(report['tracking_number'] ?? 'N/A', style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+                  Text(widget.report['tracking_number'] ?? 'N/A', style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  Text(report['title'] ?? 'No Title', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                  Text(widget.report['title'] ?? 'No Title', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
                   const SizedBox(height: 12),
                   Chip(
                     label: Text(status, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -57,29 +90,21 @@ class ReportDetailsScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Info Section
             const Text("Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            _buildInfoRow(Icons.category, "Category", report['category'] ?? 'N/A'),
-            _buildInfoRow(Icons.location_on, "Location", report['location'] ?? 'N/A'),
-
+            _buildInfoRow(Icons.category, "Category", widget.report['category'] ?? 'N/A'),
+            _buildInfoRow(Icons.location_on, "Location", widget.report['location'] ?? 'N/A'),
             const SizedBox(height: 20),
-
             const Text("Description", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(15),
               width: double.infinity,
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: Text(report['description'] ?? 'No description provided.', style: TextStyle(color: Colors.grey[800], height: 1.5)),
+              child: Text(widget.report['description'] ?? 'No description provided.', style: TextStyle(color: Colors.grey[800], height: 1.5)),
             ),
-
             const SizedBox(height: 20),
-
-            // Photos Section
             if (mediaList.isNotEmpty) ...[
               const Text("Attached Photos", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
@@ -89,9 +114,7 @@ class ReportDetailsScreen extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   itemCount: mediaList.length,
                   itemBuilder: (context, index) {
-                    // FIXED: Using our new helper to get the correct URL
                     final imageUrl = ApiService().getImageUrl(mediaList[index]['file_path']);
-
                     return Padding(
                       padding: const EdgeInsets.only(right: 12),
                       child: ClipRRect(
@@ -101,6 +124,35 @@ class ReportDetailsScreen extends StatelessWidget {
                     );
                   },
                 ),
+              ),
+            ],
+            if (status.trim().toUpperCase() == 'RESOLVED') ...[
+              const SizedBox(height: 20),
+              const Text("Rate this resolution", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Row(
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(index < _rating ? Icons.star : Icons.star_border, color: Colors.amber, size: 30),
+                    onPressed: () => setState(() => _rating = index + 1),
+                  );
+                }),
+              ),
+              TextField(
+                controller: _commentController,
+                decoration: InputDecoration(
+                  hintText: "Leave a comment (optional)",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 15),
+              ElevatedButton(
+                onPressed: _rating > 0 && !_isSubmitting ? _submitRating : null,
+                child: _isSubmitting
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text("Submit Rating"),
               ),
             ]
           ],

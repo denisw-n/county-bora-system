@@ -45,12 +45,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   Future<void> _fetchDepartments() async {
     try {
       final response = await http.get(
-        Uri.parse("http://${ApiConstants.baseUrl}:8000/api/departments"),
+        Uri.parse("${ApiConstants.baseUrl}/departments"),
         headers: {
           'Authorization': 'Bearer ${widget.token.trim()}',
           'Accept': 'application/json',
         },
       ).timeout(const Duration(seconds: 10));
+
+      debugPrint("🔍 API DEPARTMENTS RESPONSE: ${response.statusCode} - ${response.body}");
 
       if (!mounted) return;
 
@@ -63,6 +65,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           } else if (decodedData is Map && decodedData.containsKey('data')) {
             _departments = decodedData['data'];
           } else {
+            debugPrint("❌ UNEXPECTED DATA STRUCTURE: $decodedData");
             _showSnackBar("Unexpected data format from server.");
           }
         });
@@ -72,6 +75,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
         _showSnackBar("Server error: ${response.statusCode}");
       }
     } catch (e) {
+      debugPrint("❌ FETCH DEPARTMENTS ERROR: $e");
       if (mounted) _showSnackBar("Connection error. Check your server.");
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -128,7 +132,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final uri = Uri.parse("http://${ApiConstants.baseUrl}:8000/api/reports");
+      final uri = Uri.parse("${ApiConstants.baseUrl}/reports");
       var request = http.MultipartRequest('POST', uri);
 
       request.headers.addAll({
@@ -311,10 +315,6 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   );
 }
 
-// ==========================================
-// FULL MAP PICKER CLASS
-// ==========================================
-
 class FullMapPicker extends StatefulWidget {
   final LatLng initialLocation;
   const FullMapPicker({super.key, required this.initialLocation});
@@ -388,7 +388,6 @@ class _FullMapPickerState extends State<FullMapPicker> {
               ]),
             ],
           ),
-          // Instruction Header
           Positioned(
             top: 15,
             left: 15,
@@ -407,7 +406,6 @@ class _FullMapPickerState extends State<FullMapPicker> {
               ),
             ),
           ),
-          // Locate Me Button
           Positioned(
             bottom: 30,
             right: 20,
