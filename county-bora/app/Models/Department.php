@@ -39,4 +39,13 @@ class Department extends Model
     {
         return $this->hasMany(Report::class, 'dept_id');
     }
+
+    /**
+     * Relationship: A department has many daily stats.
+     * Added to resolve the 'dailyStats' not found error.
+     */
+    public function dailyStats()
+    {
+        return $this->hasMany(DepartmentDailyStat::class, 'department_id');
+    }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\HotlineController;
 use App\Http\Controllers\Api\SpatialController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportRatingController; // Imported the new controller
+use App\Http\Controllers\Api\TransparencyController; // Imported the new transparency controller
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- Admin & Public Utility Routes ---
     Route::get('/admin/pending-users', [AdminController::class, 'getPendingUsers']);
     Route::post('/admin/verify-user/{id}', [AdminController::class, 'verifyUser']);
+    
+    // Transparency Stats API
+    Route::get('/transparency', [TransparencyController::class, 'index']);
 
     // --- Public Alerts ---
     Route::get('/alerts', [AlertController::class, 'index']);

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SpatialController;
 use App\Http\Controllers\Admin\PublicCommController; 
 use App\Http\Controllers\Admin\UserController; 
 use App\Http\Controllers\Admin\HotlineController; 
+use App\Http\Controllers\Admin\TransparencyController;
 use App\Models\Report; 
 use Illuminate\Support\Facades\Route;
 
@@ -31,8 +32,25 @@ Route::middleware(['auth'])->group(function () {
      */
     Route::get('/admin/dashboard', function () {
         $reports = Report::all(); 
-        return view('admin.dashboard', compact('reports')); 
+        $totalReports = $reports->count();
+        
+        // Calculate Resolution Rate
+        $resolvedCount = $reports->where('status', 'resolved')->count();
+        $resolutionRate = $totalReports > 0 ? round(($resolvedCount / $totalReports) * 100, 1) : 0;
+        
+        // System Health (Placeholder for logic)
+        $systemHealth = 99.9;
+
+        return view('admin.dashboard', compact('reports', 'totalReports', 'resolutionRate', 'systemHealth')); 
     })->name('admin.dashboard');
+
+    /**
+     * Transparency Module Routes
+     */
+    Route::prefix('admin/transparency')->name('admin.transparency.')->group(function () {
+        Route::get('/', [TransparencyController::class, 'index'])->name('index');
+        Route::post('/refresh', [TransparencyController::class, 'refreshStats'])->name('refresh');
+    });
 
     /**
      * Report Management

@@ -34,9 +34,9 @@
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
                     <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg p-1.5 overflow-hidden transition-transform group-active:scale-95">
                         <img src="{{ asset('images/logo.png') }}" 
-                             alt="Logo" 
-                             class="w-full h-full object-contain"
-                             onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Nairobi_County_Coat_of_Arms.png/600px-Nairobi_County_Coat_of_Arms.png';">
+                              alt="Logo" 
+                              class="w-full h-full object-contain"
+                              onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Nairobi_County_Coat_of_Arms.png/600px-Nairobi_County_Coat_of_Arms.png';">
                     </div>
                     <div class="sidebar-header-text">
                         <h1 class="font-black leading-tight text-sm tracking-tight uppercase">Nairobi City County</h1>
@@ -52,53 +52,58 @@
 
             <nav class="flex-grow overflow-y-auto custom-scrollbar p-4 space-y-1">
                 <a href="{{ route('admin.dashboard') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-xs transition {{ request()->routeIs('admin.dashboard') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-xs transition {{ request()->routeIs('admin.dashboard') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">⊞</span> <span class="nav-text">Dashboard</span>
                 </a>
                 
                 <div class="nav-section-title pt-6 pb-2 px-4 text-[10px] font-black opacity-40 uppercase tracking-[0.2em]">Operations</div>
                 
                 <a href="{{ route('admin.reports.index') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.reports.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.reports.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">⚠</span> <span class="nav-text">Reports</span>
                 </a>
 
                 <a href="{{ route('admin.wards.index') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.wards.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.wards.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">🏢</span> <span class="nav-text">Wards</span>
                 </a>
 
                 <a href="{{ route('admin.departments.index') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.departments.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.departments.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">📁</span> <span class="nav-text">Departments</span>
                 </a>
 
                 <a href="{{ route('admin.spatial.index') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.spatial.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.spatial.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">🗺</span> <span class="nav-text">Spatial Awareness</span>
                 </a>
 
                 <div class="nav-section-title pt-6 pb-2 px-4 text-[10px] font-black opacity-40 uppercase tracking-[0.2em]">Management</div>
                 
                 <a href="{{ route('admin.communication.index') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.communication.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.communication.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">📢</span> <span class="nav-text">Public Communication</span>
                 </a>
 
                 <a href="{{ route('admin.users.verification') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.users.verification') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.users.verification') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">🛡</span> <span class="nav-text">User verification</span>
                 </a>
 
                 <a href="{{ route('admin.logs.index') }}" 
-                   class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.logs.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.logs.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
                     <span class="text-lg">📋</span> <span class="nav-text">System audit</span>
+                </a>
+
+                <a href="{{ route('admin.transparency.index') }}" 
+                    class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs transition {{ request()->routeIs('admin.transparency.*') ? 'sidebar-item-active shadow-md' : 'text-white/70 hover:bg-white/10 font-semibold' }}">
+                    <span class="text-lg">📊</span> <span class="nav-text">Transparency Portal</span>
                 </a>
             </nav>
 
             <div class="p-4 bg-[#007A29] border-t border-white/5">
                 <a href="{{ route('admin.hotlines.index') }}" 
-                   class="p-3 rounded-xl text-white text-[10px] font-black text-center shadow-lg mb-4 flex items-center justify-center gap-2 transition-all active:scale-95 {{ request()->routeIs('admin.hotlines.*') ? 'emergency-active' : 'bg-[#991B1B] hover:bg-[#7F1D1D]' }}">
+                    class="p-3 rounded-xl text-white text-[10px] font-black text-center shadow-lg mb-4 flex items-center justify-center gap-2 transition-all active:scale-95 {{ request()->routeIs('admin.hotlines.*') ? 'emergency-active' : 'bg-[#991B1B] hover:bg-[#7F1D1D]' }}">
                     <span class="text-xs">★</span> <span class="nav-text uppercase tracking-widest">Hotlines</span>
                 </a>
 
@@ -140,6 +145,10 @@
             }
         }
     </script>
+    
+    {{-- Chart.js Library --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     @stack('scripts')
 </body>
 </html>

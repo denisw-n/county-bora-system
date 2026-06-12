@@ -30,17 +30,20 @@
 
     <div class="p-8 max-w-[1400px] mx-auto space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {{-- Active Reports --}}
             <div class="bg-[#006D24] p-6 rounded-[2rem] text-white shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Active Reports</span>
-                <h2 class="text-4xl font-black mt-1">{{ count($reports ?? []) }}</h2>
+                <h2 class="text-4xl font-black mt-1">{{ $totalReports ?? 0 }}</h2>
             </div>
+            {{-- Resolution Rate --}}
             <div class="bg-[#FEDF0E] p-6 rounded-[2rem] text-[#716200] shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Resolution Rate</span>
-                <h2 class="text-4xl font-black mt-1">84.2%</h2>
+                <h2 class="text-4xl font-black mt-1">{{ $resolutionRate ?? '0' }}%</h2>
             </div>
+            {{-- System Health --}}
             <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">System Health</span>
-                <h2 class="text-4xl font-black mt-1 text-gray-800">99.9%</h2>
+                <h2 class="text-4xl font-black mt-1 text-gray-800">{{ $systemHealth ?? '0' }}%</h2>
             </div>
         </div>
 
@@ -66,7 +69,7 @@
                     <div class="bg-white/10 p-5 rounded-2xl border-l-4 border-[#FEDF0E]">
                         <p class="text-[11px] font-black uppercase tracking-tight">System Status</p>
                         <p class="text-[10px] text-white/50 leading-relaxed mt-1">
-                            Admin Monolith active. Mapping {{ count($reports ?? []) }} coordinates across Nairobi.
+                            Admin Monolith active. Mapping {{ $totalReports ?? 0 }} coordinates across Nairobi.
                         </p>
                     </div>
                 </div>
@@ -80,7 +83,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const map = L.map('dashboardMap', { zoomControl: false, attributionControl: false }).setView([-1.286389, 36.817223], 12);
-
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20 }).addTo(map);
 
             const reports = @json($reports ?? []);
