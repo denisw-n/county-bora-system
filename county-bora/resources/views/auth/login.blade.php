@@ -210,7 +210,7 @@
 
                 <div class="mb-2 d-flex justify-content-between align-items-center">
                     <label class="form-label-custom">Password</label>
-                    <a href="#" class="forgot-link">Forgot Password?</a>
+                    <a href="{{ route('password.request') }}" class="forgot-link">Forgot Password?</a>
                 </div>
                 <input type="password" name="password" class="input-custom" placeholder="••••••••" required>
 

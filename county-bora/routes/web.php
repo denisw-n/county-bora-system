@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\ForgotPasswordController; // Added
+use App\Http\Controllers\Auth\ResetPasswordController;   // Added
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\WardController;
@@ -10,6 +12,7 @@ use App\Http\Controllers\Admin\PublicCommController;
 use App\Http\Controllers\Admin\UserController; 
 use App\Http\Controllers\Admin\HotlineController; 
 use App\Http\Controllers\Admin\TransparencyController;
+use App\Http\Controllers\Admin\InvitationController;
 use App\Models\Report; 
 use Illuminate\Support\Facades\Route;
 
@@ -24,8 +27,20 @@ Route::get('/login', function () {
 
 Route::post('/login', [AuthController::class, 'login']);
 
+// --- Password Reset Routes (New) ---
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->middleware('guest')->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->middleware('guest')->name('password.email');
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->middleware('guest')->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->middleware('guest')->name('password.update');
+
+// --- Public Invitation Routes ---
+Route::get('/admin/invitations/accept/{token}', [InvitationController::class, 'accept'])->name('admin.invitations.accept');
+Route::post('/register/submit', [AuthController::class, 'adminRegister'])->name('register.submit');
+
 // --- Protected Admin Routes ---
 Route::middleware(['auth'])->group(function () {
+    
+    // ... (All your existing protected routes remain exactly the same)
     
     /**
      * Main Dashboard
@@ -34,15 +49,21 @@ Route::middleware(['auth'])->group(function () {
         $reports = Report::all(); 
         $totalReports = $reports->count();
         
-        // Calculate Resolution Rate
         $resolvedCount = $reports->where('status', 'resolved')->count();
         $resolutionRate = $totalReports > 0 ? round(($resolvedCount / $totalReports) * 100, 1) : 0;
         
-        // System Health (Placeholder for logic)
         $systemHealth = 99.9;
 
         return view('admin.dashboard', compact('reports', 'totalReports', 'resolutionRate', 'systemHealth')); 
     })->name('admin.dashboard');
+
+    /**
+     * Admin Invitation Module
+     */
+    Route::prefix('admin/invitations')->name('admin.invitations.')->group(function () {
+        Route::get('/create', [InvitationController::class, 'create'])->name('create');
+        Route::post('/store', [InvitationController::class, 'store'])->name('store');
+    });
 
     /**
      * Transparency Module Routes
@@ -58,13 +79,9 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin/reports')->name('admin.reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         
-        // --- NEW: Rating & Feedback Routes ---
-        // 1. Web view for the list of ratings
         Route::get('/ratings', [ReportController::class, 'viewRatings'])->name('ratings.view');
-        // 2. API endpoint for ratings (if needed by JS components)
         Route::get('/ratings/data', [ReportController::class, 'getRatings'])->name('ratings.data');
         
-        // Self-predicting search and Quick Status Update
         Route::get('/search-prediction', [ReportController::class, 'search'])->name('search');
         Route::post('/quick-status-update', [ReportController::class, 'quickStatusUpdate'])->name('quickStatusUpdate');
         

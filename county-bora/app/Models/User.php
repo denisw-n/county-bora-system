@@ -29,7 +29,6 @@ class User extends Authenticatable
 
     /**
      * The attributes that are mass assignable.
-     * Includes the new national_id_image_url for admin verification.
      */
     protected $fillable = [
         'id', 
@@ -45,6 +44,15 @@ class User extends Authenticatable
         'role', 
         'is_verified'
     ];
+
+    /**
+     * Accessor for full name.
+     * Usage: $user->full_name
+     */
+    public function getFullNameAttribute()
+    {
+        return "{$this->first_name} {$this->middle_name} {$this->last_name}";
+    }
 
     /**
      * Override the default password reset notification to use a 
@@ -68,12 +76,13 @@ class User extends Authenticatable
     }
 
     /**
-     * Boot function to handle UUID generation on creation.
+     * Boot function to handle UUID generation.
      */
     protected static function boot()
     {
         parent::boot();
         static::creating(function ($model) {
+            // Generate UUID
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
             }
@@ -82,7 +91,6 @@ class User extends Authenticatable
 
     /**
      * Relationship: The Primary Ward the user resides in.
-     * Essential for displaying "Upper Hill" on the Profile Card.
      */
     public function ward(): BelongsTo
     {
@@ -106,7 +114,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the public alerts created BY this user (if they are an admin).
+     * Get the public alerts created BY this user.
      */
     public function alerts(): HasMany
     {

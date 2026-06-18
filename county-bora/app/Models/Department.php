@@ -42,10 +42,10 @@ class Department extends Model
 
     /**
      * Relationship: A department has many daily stats.
-     * Added to resolve the 'dailyStats' not found error.
+     * FIXED: Updated to 'dept_id' to align with project-wide naming standard.
      */
     public function dailyStats()
     {
-        return $this->hasMany(DepartmentDailyStat::class, 'department_id');
+        return $this->hasMany(DepartmentDailyStat::class, 'dept_id');
     }
 }

@@ -31,20 +31,20 @@
     <div class="p-8 max-w-[1400px] mx-auto space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             {{-- Active Reports --}}
-            <div class="bg-[#006D24] p-6 rounded-[2rem] text-white shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
+            <a href="{{ route('admin.logs.index') }}" class="block bg-[#006D24] p-6 rounded-[2rem] text-white shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Active Reports</span>
                 <h2 class="text-4xl font-black mt-1">{{ $totalReports ?? 0 }}</h2>
-            </div>
+            </a>
             {{-- Resolution Rate --}}
-            <div class="bg-[#FEDF0E] p-6 rounded-[2rem] text-[#716200] shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
+            <a href="{{ route('admin.logs.index') }}" class="block bg-[#FEDF0E] p-6 rounded-[2rem] text-[#716200] shadow-xl h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Resolution Rate</span>
                 <h2 class="text-4xl font-black mt-1">{{ $resolutionRate ?? '0' }}%</h2>
-            </div>
+            </a>
             {{-- System Health --}}
-            <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
+            <a href="{{ route('admin.logs.index') }}" class="block bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm h-40 flex flex-col justify-center transition hover:scale-[1.02] duration-300">
                 <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">System Health</span>
                 <h2 class="text-4xl font-black mt-1 text-gray-800">{{ $systemHealth ?? '0' }}%</h2>
-            </div>
+            </a>
         </div>
 
         <div class="grid grid-cols-12 gap-6">
@@ -73,8 +73,11 @@
                         </p>
                     </div>
                 </div>
-                <a href="{{ route('admin.reports.index') }}" class="mt-8 block text-center bg-[#FEDF0E] text-[#716200] text-[10px] font-black py-3 rounded-xl uppercase tracking-widest hover:opacity-90 transition">
+                <a href="{{ route('admin.logs.index') }}" class="mt-8 block text-center bg-[#FEDF0E] text-[#716200] text-[10px] font-black py-3 rounded-xl uppercase tracking-widest hover:opacity-90 transition">
                     View Full Audit Trail
+                </a>
+                <a href="{{ route('admin.invitations.create') }}" class="mt-2 block w-full text-center bg-white/5 text-white text-[9px] font-black py-3 rounded-xl uppercase tracking-widest hover:bg-white/10 transition border border-white/10">
+                    + Issue Admin Invite
                 </a>
             </div>
         </div>

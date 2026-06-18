@@ -20,6 +20,15 @@ class AuditLog extends Model
         'timestamp',
     ];
 
+    // --- ADD THIS METHOD ---
+    public function admin()
+    {
+        // This tells Laravel: 
+        // 1. The 'admin_id' in this table belongs to the 'User' model.
+        return $this->belongsTo(User::class, 'admin_id');
+    }
+    // -----------------------
+
     protected static function boot()
     {
         parent::boot();

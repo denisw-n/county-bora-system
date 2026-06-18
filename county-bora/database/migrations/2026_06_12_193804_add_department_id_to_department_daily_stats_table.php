@@ -12,12 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('department_daily_stats', function (Blueprint $table) {
-            // Adding the foreign key column to link to departments table
-            // We use uuid() to match the primary key type of your Departments model
-            $table->uuid('department_id')->after('id')->nullable();
+            // Changed from 'department_id' to 'dept_id' to align with your project standard
+            $table->uuid('dept_id')->after('id')->nullable();
             
-            // Optional: Add a foreign key constraint for data integrity
-            // $table->foreign('department_id')->references('id')->on('departments')->onDelete('cascade');
+            // If you want to add the foreign key constraint:
+            // $table->foreign('dept_id')->references('id')->on('departments')->onDelete('cascade');
         });
     }
 
@@ -27,7 +26,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('department_daily_stats', function (Blueprint $table) {
-            $table->dropColumn('department_id');
+            $table->dropColumn('dept_id');
         });
     }
 };

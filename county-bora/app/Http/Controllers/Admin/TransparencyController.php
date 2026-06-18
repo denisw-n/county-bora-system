@@ -41,18 +41,24 @@ class TransparencyController extends Controller
 
         $allStats = $dailyQuery->latest('date')->get()->groupBy('dept_id');
 
+        // Helper to normalize JSON keys to the expected ['Dispatched', 'Resolved', 'Pending', 'In-progress']
+        $normalizeStatus = function($status) {
+            $key = str_replace('_', '-', strtolower($status));
+            return ($key === 'in-progress') ? 'In-progress' : ucfirst($key);
+        };
+
         // Paginated stats for the list view
         $perPage = 5;
         $page = $request->input('page', 1);
         $offset = ($page - 1) * $perPage;
         $paginatedItems = $allStats->slice($offset, $perPage);
         
-        $processedStats = $paginatedItems->map(function ($rows) {
+        $processedStats = $paginatedItems->map(function ($rows) use ($normalizeStatus) {
             $totals = ['Dispatched' => 0, 'Resolved' => 0, 'Pending' => 0, 'In-progress' => 0];
             foreach ($rows as $row) {
                 $breakdown = json_decode($row->status_breakdown, true) ?? [];
                 foreach ($breakdown as $status => $count) {
-                    $key = ucfirst(strtolower($status));
+                    $key = $normalizeStatus($status);
                     if (array_key_exists($key, $totals)) {
                         $totals[$key] += $count;
                     }
@@ -73,12 +79,12 @@ class TransparencyController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        $fullStats = $allStats->map(function ($rows) {
+        $fullStats = $allStats->map(function ($rows) use ($normalizeStatus) {
             $totals = ['Dispatched' => 0, 'Resolved' => 0, 'Pending' => 0, 'In-progress' => 0];
             foreach ($rows as $row) {
                 $breakdown = json_decode($row->status_breakdown, true) ?? [];
                 foreach ($breakdown as $status => $count) {
-                    $key = ucfirst(strtolower($status));
+                    $key = $normalizeStatus($status);
                     if (array_key_exists($key, $totals)) {
                         $totals[$key] += $count;
                     }
@@ -103,7 +109,11 @@ class TransparencyController extends Controller
             foreach ($rows as $row) {
                 $breakdown = json_decode($row->status_breakdown, true) ?? [];
                 $totalItems += array_sum($breakdown);
-                $totalResolved += ($breakdown['resolved'] ?? 0);
+                foreach($breakdown as $status => $count) {
+                    if (strtolower($status) === 'resolved') {
+                        $totalResolved += $count;
+                    }
+                }
             }
             return $totalItems > 0 ? ($totalResolved / $totalItems) * 100 : 0;
         });
@@ -111,14 +121,23 @@ class TransparencyController extends Controller
         $topWards = $allWardPerformance->sortByDesc(fn($score) => $score)->take(5);
         $bottomWards = $allWardPerformance->sortBy(fn($score) => $score)->take(5);
 
-        // Dynamic Radar Data: Calculate efficiency for top 5 departments
+        // 2. Radar Data
         $radarDataCollection = Department::with('dailyStats')->get()->map(function ($dept) {
             $stats = $dept->dailyStats;
-            $resolved = $stats->sum('resolved_count');
-            $total = $resolved + $stats->sum('pending_count');
+            $resolved = 0;
+            $total = 0;
+            foreach ($stats as $stat) {
+                $breakdown = json_decode($stat->status_breakdown, true) ?? [];
+                foreach ($breakdown as $status => $count) {
+                    if (strtolower($status) === 'resolved') {
+                        $resolved += $count;
+                    }
+                    $total += $count;
+                }
+            }
             return [
                 'name' => $dept->dept_name,
-                'efficiency' => $total > 0 ? ($resolved / $total) * 100 : 0
+                'efficiency' => $total > 0 ? round(($resolved / $total) * 100, 2) : 0
             ];
         })->sortByDesc('efficiency')->take(5);
 

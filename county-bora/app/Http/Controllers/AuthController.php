@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Invite;
+use App\Models\Ward;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -10,7 +12,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    // --- REGISTER (Mainly for Flutter Residents) ---
+    // --- REGISTER (Citizen App) ---
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,7 +38,7 @@ class AuthController extends Controller
             'national_id' => $request->national_id,
             'phone_number' => $request->phone_number,
             'ward_id' => $request->ward_id,
-            'role' => 'citizen', // Default role for app registration
+            'role' => 'citizen', 
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -48,7 +50,46 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // --- LOGIN (Handles both Flutter App and Blade Admin) ---
+    // --- ADMIN REGISTER (Consumes Invite Token) ---
+    public function adminRegister(Request $request)
+    {
+        // 1. Validate fields including ward_id
+        $request->validate([
+            'token'        => 'required|exists:invites,token',
+            'first_name'   => 'required|string|max:255',
+            'last_name'    => 'required|string|max:255',
+            'password'     => 'required|min:8|confirmed',
+            'national_id'  => 'required|string|unique:users,national_id',
+            'phone_number' => 'required|string|max:20',
+            'ward_id'      => 'required|exists:wards,id', // Admin must now pick a ward
+        ]);
+
+        // 2. Find the valid invite
+        $invite = Invite::where('token', $request->token)
+            ->where('expires_at', '>', now())
+            ->firstOrFail();
+
+        // 3. Create the user with the selected ward_id
+        $user = User::create([
+            'first_name'   => $request->first_name,
+            'last_name'    => $request->last_name,
+            'email'        => $invite->email,
+            'password'     => Hash::make($request->password),
+            'role'         => $invite->role,
+            'is_verified'  => true,
+            'national_id'  => $request->national_id,
+            'phone_number' => $request->phone_number,
+            'ward_id'      => $request->ward_id, 
+        ]);
+
+        // 4. Cleanup
+        $invite->delete();
+
+        Auth::login($user);
+        return redirect('/admin/dashboard')->with('success', 'Welcome, Admin!');
+    }
+
+    // --- LOGIN ---
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -65,7 +106,6 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        // Check password
         if (!$user || !Hash::check($request->password, $user->password)) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Invalid credentials'], 401);
@@ -73,7 +113,6 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'The provided credentials do not match our records.']);
         }
 
-        // 1. Handle Web Login (Blade Admin Dashboard)
         if (!$request->expectsJson()) {
             if ($user->role !== 'admin') {
                 return back()->withErrors(['email' => 'Access Denied: Only admins can log in here.']);
@@ -84,9 +123,7 @@ class AuthController extends Controller
             return redirect()->intended('/admin/dashboard');
         }
 
-        // 2. Handle API Login (Flutter Resident App)
         $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
