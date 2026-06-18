@@ -24,6 +24,10 @@ dependencies:
   url_launcher: ^6.3.0
   app_links: ^6.2.0
 
+  # Data Visualization (Downgraded for compatibility with Flutter 3.16.5)
+  fl_chart: 0.66.0
+  flutter_radar_chart: ^0.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

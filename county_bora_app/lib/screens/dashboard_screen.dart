@@ -9,6 +9,7 @@ import 'alerts_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'map_view_screen.dart';
+import 'transparency_screen.dart'; // Added import
 import '../main.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -29,8 +30,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   int _unreadCount = 0;
 
   final Color _countyGreen = const Color(0xFF008444);
-  final Color _bgColor = const Color(0xFFE8EFE8); // Darkened sage-grey background
-  final Color _cardColor = Colors.white; // Solid white cards for clarity
+  final Color _bgColor = const Color(0xFFE8EFE8);
+  final Color _cardColor = Colors.white;
   final Color _accentYellow = const Color(0xFFFFD700);
 
   @override
@@ -152,25 +153,31 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
               Text("Jambo, ${_userProfile['first_name'] ?? 'Citizen'}!", style: const TextStyle(fontSize: 16, color: Colors.grey)),
               const Text("What would you like to do today?", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                    color: _countyGreen,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: _countyGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.bar_chart, color: Colors.white, size: 40),
-                    const SizedBox(width: 15),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-                      Text("Transparency Portal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text("Monitor city development & budget", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    ])),
-                    const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-                  ],
+
+              // Transparency Portal Entry
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TransparencyScreen())),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                      color: _countyGreen,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [BoxShadow(color: _countyGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.bar_chart, color: Colors.white, size: 40),
+                      const SizedBox(width: 15),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                        Text("Transparency Portal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text("Monitor city development & budget", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      ])),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                    ],
+                  ),
                 ),
               ),
+
               const SizedBox(height: 25),
               Row(children: [
                 Expanded(child: _buildActionCard("Reports History", Icons.history, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())))),

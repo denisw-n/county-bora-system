@@ -18,6 +18,35 @@ class ApiService {
   }
 
   // =========================
+  // TRANSPARENCY PORTAL
+  // =========================
+  Future<Map<String, dynamic>> getTransparencyStats() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/transparency'),
+        headers: headers,
+      );
+
+      // --- DEBUG PRINT ADDED HERE ---
+      debugPrint("🔍 API DEBUG - Full Response: ${response.body}");
+
+      if (await _handle401(response)) {
+        return {'error': 'Unauthorized'};
+      }
+
+      if (response.statusCode == 200) {
+        // Returned directly to allow TransparencyScreen to handle real API keys
+        return Map<String, dynamic>.from(jsonDecode(response.body));
+      }
+      return {'error': 'Failed to load stats. Status: ${response.statusCode}'};
+    } catch (e) {
+      debugPrint("❌ TRANSPARENCY STATS ERROR: $e");
+      return {'error': 'Connection error: $e'};
+    }
+  }
+
+  // =========================
   // FORGOT PASSWORD
   // =========================
   Future<Map<String, dynamic>> forgotPassword(String email) async {
