@@ -26,7 +26,8 @@ Route::get('/login', function () {
     return view('auth.login'); 
 })->name('login');
 
-Route::post('/login', [AuthController::class, 'login']);
+// Applied the throttle middleware to the login POST route
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login_attempts');
 
 // --- Password Reset Routes ---
 Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->middleware('guest')->name('password.request');

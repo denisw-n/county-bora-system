@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\Route;
 
 // --- PUBLIC ROUTES ---
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Applied the throttle middleware to the login route
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login_attempts');
 
 // --- FORGOT PASSWORD & RESET PASSWORD ---
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);

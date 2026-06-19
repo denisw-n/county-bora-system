@@ -4,6 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Http\Request;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -37,6 +39,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        
+        // Handle Throttling Exception to prevent 500 error screen
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            // If it's a web request, show the 429 view
+            if (!$request->expectsJson()) {
+                return response()->view('errors.429', [], 429);
+            }
+            
+            // If it's an API request, return JSON
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Too many login attempts. Please try again later.'
+            ], 429);
+        });
+
     })
     ->create();
