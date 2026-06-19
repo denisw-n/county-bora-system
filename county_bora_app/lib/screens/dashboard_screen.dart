@@ -11,6 +11,7 @@ import 'profile_screen.dart';
 import 'map_view_screen.dart';
 import 'transparency_screen.dart'; // Added import
 import '../main.dart';
+import 'package:county_bora_app/widgets/app_refresh_indicator.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Map<dynamic, dynamic> userData;
@@ -26,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   String _authToken = '';
   Map<String, dynamic> _userProfile = {};
   bool _isLoading = true;
-  late Future<List<dynamic>> _recentReportsFuture;
+  List<dynamic> _recentReports = [];
   int _unreadCount = 0;
 
   final Color _countyGreen = const Color(0xFF008444);
@@ -62,7 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     }
   }
 
-  void _initializeData() async {
+  Future<void> _initializeData() async {
     try {
       Map<String, dynamic> parsedProfile = {};
       if (widget.userData.containsKey('user') && widget.userData['user'] is Map) {
@@ -77,13 +78,14 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         token = prefs.getString('auth_token') ?? '';
       }
 
+      final reports = await _apiService.getMyRecentReports(limit: 5);
       int count = await _apiService.getUnreadNotificationCount();
 
       if (mounted) {
         setState(() {
           _userProfile = parsedProfile;
           _authToken = token;
-          _recentReportsFuture = _apiService.getMyRecentReports(limit: 5);
+          _recentReports = reports;
           _unreadCount = count;
           _isLoading = false;
         });
@@ -144,79 +146,75 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         icon: const Icon(Icons.add_circle_outline, color: Colors.black),
         label: const Text("REPORT AN ISSUE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Jambo, ${_userProfile['first_name'] ?? 'Citizen'}!", style: const TextStyle(fontSize: 16, color: Colors.grey)),
-              const Text("What would you like to do today?", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
+      body: AppRefreshIndicator(
+        onRefresh: _initializeData,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Jambo, ${_userProfile['first_name'] ?? 'Citizen'}!", style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                const Text("What would you like to do today?", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
 
-              // Transparency Portal Entry
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TransparencyScreen())),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                      color: _countyGreen,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [BoxShadow(color: _countyGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.bar_chart, color: Colors.white, size: 40),
-                      const SizedBox(width: 15),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-                        Text("Transparency Portal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        Text("Monitor city development & budget", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      ])),
-                      const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-                    ],
+                // Transparency Portal Entry
+                GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TransparencyScreen())),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                        color: _countyGreen,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [BoxShadow(color: _countyGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bar_chart, color: Colors.white, size: 40),
+                        const SizedBox(width: 15),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                          Text("Transparency Portal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          Text("Monitor city development & budget", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        ])),
+                        const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 25),
-              Row(children: [
-                Expanded(child: _buildActionCard("Reports History", Icons.history, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())))),
-                const SizedBox(width: 15),
-                Expanded(child: _buildActionCard("Hotlines", Icons.call, Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HotlinesScreen())))),
-              ]),
-              const SizedBox(height: 15),
-              Row(children: [
-                Expanded(child: _buildActionCard("Map View", Icons.map, Colors.purple, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MapViewScreen())))),
-                const SizedBox(width: 15),
-                Expanded(child: _buildActionCard("Alerts", Icons.notifications_active, Colors.red, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AlertsScreen())))),
-              ]),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("MY RECENT REPORTS", style: TextStyle(fontWeight: FontWeight.bold)),
-                  TextButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())),
-                    child: Text("View All", style: TextStyle(color: _countyGreen, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 5),
-              FutureBuilder<List<dynamic>>(
-                future: _recentReportsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
-                  } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Text("No recent reports found."));
-                  }
-                  return Column(
-                    children: snapshot.data!.map((report) => _buildRecentReportCard(report)).toList(),
-                  );
-                },
-              ),
-              const SizedBox(height: 100),
-            ],
+                const SizedBox(height: 25),
+                Row(children: [
+                  Expanded(child: _buildActionCard("Reports History", Icons.history, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())))),
+                  const SizedBox(width: 15),
+                  Expanded(child: _buildActionCard("Hotlines", Icons.call, Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HotlinesScreen())))),
+                ]),
+                const SizedBox(height: 15),
+                Row(children: [
+                  Expanded(child: _buildActionCard("Map View", Icons.map, Colors.purple, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MapViewScreen())))),
+                  const SizedBox(width: 15),
+                  Expanded(child: _buildActionCard("Alerts", Icons.notifications_active, Colors.red, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AlertsScreen())))),
+                ]),
+                const SizedBox(height: 30),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("MY RECENT REPORTS", style: TextStyle(fontWeight: FontWeight.bold)),
+                    TextButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsHistoryScreen())),
+                      child: Text("View All", style: TextStyle(color: _countyGreen, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                _recentReports.isEmpty
+                    ? const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Text("No recent reports found."))
+                    : Column(
+                  children: _recentReports.map((report) => _buildRecentReportCard(report)).toList(),
+                ),
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
       ),

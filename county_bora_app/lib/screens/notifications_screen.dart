@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 1. Added intl import
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import 'notification_details_screen.dart';
+import 'package:county_bora_app/widgets/app_refresh_indicator.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -12,7 +13,9 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final ApiService _apiService = ApiService();
-  late Future<List<dynamic>> _notificationsFuture;
+
+  List<dynamic> _notifications = [];
+  bool _isLoading = true;
 
   // Nairobi County Brand Colors
   final Color _nairobiGreen = const Color(0xFF068930);
@@ -21,10 +24,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshNotifications();
+    _loadNotifications();
   }
 
-  // 2. Added date formatting helper
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
+    final data = await _apiService.getNotifications();
+    if (mounted) {
+      setState(() {
+        _notifications = data;
+        _isLoading = false;
+      });
+    }
+  }
+
   String _formatDate(String? dateString) {
     if (dateString == null) return "Just now";
     try {
@@ -33,12 +46,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e) {
       return "Recent";
     }
-  }
-
-  void _refreshNotifications() {
-    setState(() {
-      _notificationsFuture = _apiService.getNotifications();
-    });
   }
 
   @override
@@ -51,25 +58,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: _notificationsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: _nairobiGreen));
-          }
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("You are all caught up!"));
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: snapshot.data!.length,
-            itemBuilder: (context, index) {
-              final note = snapshot.data![index];
-              return _buildNotificationCard(note);
-            },
-          );
-        },
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: _nairobiGreen))
+          : _notifications.isEmpty
+          ? const Center(child: Text("You are all caught up!"))
+          : AppRefreshIndicator(
+        onRefresh: _loadNotifications,
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: _notifications.length,
+          itemBuilder: (context, index) {
+            return _buildNotificationCard(_notifications[index]);
+          },
+        ),
       ),
     );
   }
@@ -95,10 +97,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         borderRadius: BorderRadius.circular(16),
         onTap: () async {
           if (!isRead) await _apiService.markNotificationAsRead(note['id']);
-          _refreshNotifications();
-          Navigator.push(context, MaterialPageRoute(
-            builder: (_) => NotificationDetailsScreen(notification: Map<String, dynamic>.from(note)),
-          ));
+          _loadNotifications();
+          if (mounted) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => NotificationDetailsScreen(notification: Map<String, dynamic>.from(note)),
+            ));
+          }
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +143,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             color: status.contains('SUCCESS') ? Colors.green[800] : Colors.black87
                         )),
                       ),
-                      // 3. Replaced "Just now" with formatted date
                       Text(
                           _formatDate(note['created_at']),
                           style: TextStyle(fontSize: 10, color: Colors.grey[500])

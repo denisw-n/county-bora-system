@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import 'report_details_screen.dart';
+import 'package:county_bora_app/widgets/app_refresh_indicator.dart';
 
 class ReportsHistoryScreen extends StatefulWidget {
   const ReportsHistoryScreen({super.key});
@@ -12,16 +13,28 @@ class ReportsHistoryScreen extends StatefulWidget {
 
 class _ReportsHistoryScreenState extends State<ReportsHistoryScreen> {
   final ApiService _apiService = ApiService();
-  late Future<List<dynamic>> _allReportsFuture;
 
-  // Nairobi County Branding
+  List<dynamic> _reports = [];
+  bool _isLoading = true;
+
   final Color _nairobiGreen = const Color(0xFF068930);
   final Color _nairobiYellow = const Color(0xFFFCDD07);
 
   @override
   void initState() {
     super.initState();
-    _allReportsFuture = _apiService.getAllReports();
+    _loadReports();
+  }
+
+  Future<void> _loadReports() async {
+    setState(() => _isLoading = true);
+    final data = await _apiService.getAllReports();
+    if (mounted) {
+      setState(() {
+        _reports = data;
+        _isLoading = false;
+      });
+    }
   }
 
   String _formatDate(String? dateString) {
@@ -33,7 +46,6 @@ class _ReportsHistoryScreenState extends State<ReportsHistoryScreen> {
     }
   }
 
-  // Logic to return colors based on status
   Color _getStatusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'resolved': return _nairobiGreen;
@@ -52,58 +64,52 @@ class _ReportsHistoryScreenState extends State<ReportsHistoryScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          // Header Section
-          SizedBox(
-            height: 160,
-            width: double.infinity,
-            child: Stack(
-              children: [
-                Image.asset('assets/images/city_banner.jpg', width: double.infinity, height: 160, fit: BoxFit.cover),
-                Container(color: Colors.black.withOpacity(0.5)),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: _nairobiYellow, borderRadius: BorderRadius.circular(4)),
-                        child: const Text("ISSUE TRACKER", style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text("Track your report progress", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    ],
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: _nairobiGreen))
+          : AppRefreshIndicator(
+        onRefresh: _loadReports,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            // Header Section
+            SizedBox(
+              height: 160,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  Image.asset('assets/images/city_banner.jpg', width: double.infinity, height: 160, fit: BoxFit.cover),
+                  Container(color: Colors.black.withOpacity(0.5)),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: _nairobiYellow, borderRadius: BorderRadius.circular(4)),
+                          child: const Text("ISSUE TRACKER", style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text("Track your report progress", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // List Section
-          Expanded(
-            child: FutureBuilder<List<dynamic>>(
-              future: _allReportsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator(color: _nairobiGreen));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("No report history found."));
-                }
-
-                final reports = snapshot.data!;
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount: reports.length,
-                  itemBuilder: (context, index) => _buildReportCard(reports[index]),
-                );
-              },
+            // Report List
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: _reports.isEmpty
+                  ? const Center(child: Padding(padding: EdgeInsets.only(top: 50), child: Text("No report history found.")))
+                  : Column(
+                children: _reports.map((report) => _buildReportCard(report)).toList(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -128,7 +134,6 @@ class _ReportsHistoryScreenState extends State<ReportsHistoryScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Clipboard icon is now branded green
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -148,7 +153,6 @@ class _ReportsHistoryScreenState extends State<ReportsHistoryScreen> {
                   ],
                 ),
               ),
-              // Status Badge reflects the color of the status
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
