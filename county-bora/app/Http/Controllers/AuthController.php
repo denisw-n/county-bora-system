@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
 {
@@ -112,6 +113,9 @@ class AuthController extends Controller
             }
             return back()->withErrors(['email' => 'The provided credentials do not match our records.']);
         }
+
+        // Clear login attempts upon successful authentication
+        RateLimiter::clear('login_attempts:' . $request->ip());
 
         if (!$request->expectsJson()) {
             if ($user->role !== 'admin') {

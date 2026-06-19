@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
 {
@@ -91,6 +92,9 @@ class AuthController extends Controller
                 'message' => 'Account pending admin approval'
             ], 403);
         }
+
+        // Clear login attempts upon successful authentication
+        RateLimiter::clear('login_attempts:' . $request->ip());
 
         $token = $user->createToken($request->device_name)->plainTextToken;
 
