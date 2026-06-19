@@ -16,4 +16,4 @@ Schedule::call(function () {
     $service = app(StatsService::class);
     $service->generateDepartmentalSnapshot();
     $service->refreshAnalytics();
-})->everyMinute();
+})->daily();

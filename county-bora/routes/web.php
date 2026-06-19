@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Auth\ForgotPasswordController; // Added
-use App\Http\Controllers\Auth\ResetPasswordController;   // Added
+use App\Http\Controllers\Auth\ForgotPasswordController; 
+use App\Http\Controllers\Auth\ResetPasswordController;   
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\WardController;
@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\HotlineController; 
 use App\Http\Controllers\Admin\TransparencyController;
 use App\Http\Controllers\Admin\InvitationController;
+use App\Http\Controllers\Admin\ProfileController; // Added
 use App\Models\Report; 
 use Illuminate\Support\Facades\Route;
 
@@ -27,7 +28,7 @@ Route::get('/login', function () {
 
 Route::post('/login', [AuthController::class, 'login']);
 
-// --- Password Reset Routes (New) ---
+// --- Password Reset Routes ---
 Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->middleware('guest')->name('password.request');
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->middleware('guest')->name('password.email');
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->middleware('guest')->name('password.reset');
@@ -39,8 +40,6 @@ Route::post('/register/submit', [AuthController::class, 'adminRegister'])->name(
 
 // --- Protected Admin Routes ---
 Route::middleware(['auth'])->group(function () {
-    
-    // ... (All your existing protected routes remain exactly the same)
     
     /**
      * Main Dashboard
@@ -56,6 +55,11 @@ Route::middleware(['auth'])->group(function () {
 
         return view('admin.dashboard', compact('reports', 'totalReports', 'resolutionRate', 'systemHealth')); 
     })->name('admin.dashboard');
+
+    /**
+     * Admin Profile Module
+     */
+    Route::get('/admin/profile', [ProfileController::class, 'show'])->name('admin.profile.show');
 
     /**
      * Admin Invitation Module
