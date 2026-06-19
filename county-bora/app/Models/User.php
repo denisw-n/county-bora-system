@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
+use Illuminate\Support\Facades\Request;
 
 class User extends Authenticatable
 {
@@ -47,7 +48,6 @@ class User extends Authenticatable
 
     /**
      * Accessor for full name.
-     * Usage: $user->full_name
      */
     public function getFullNameAttribute()
     {
@@ -55,12 +55,22 @@ class User extends Authenticatable
     }
 
     /**
-     * Override the default password reset notification to use a 
-     * Deep Link instead of a web route.
+     * Override the default password reset notification.
+     * Detects if the request is API/App based to switch between 
+     * Deep Link and Web Route.
      */
     public function sendPasswordResetNotification($token)
     {
-        $url = "countybora://reset-password?token=$token&email={$this->email}";
+        // Detect if request is coming from an API/Mobile context
+        $isApi = Request::expectsJson() || Str::startsWith(Request::path(), 'api/');
+
+        if ($isApi) {
+            // Mobile App Deep Link
+            $url = "countybora://reset-password?token=$token&email={$this->email}";
+        } else {
+            // Web Route
+            $url = route('password.reset', ['token' => $token, 'email' => $this->email]);
+        }
 
         $notification = new ResetPasswordNotification($token);
         
@@ -82,7 +92,6 @@ class User extends Authenticatable
     {
         parent::boot();
         static::creating(function ($model) {
-            // Generate UUID
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
             }
