@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
          */
         RateLimiter::for('login_attempts', function (Request $request) {
             // Adjust the number of attempts and decay time as needed for your presentation
-            return Limit::perMinute(720, 5)->by($request->ip());
+            return Limit::perMinute(5, 720)->by($request->ip());
         });
     }
 }
