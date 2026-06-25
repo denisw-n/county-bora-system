@@ -175,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
                         const SizedBox(width: 15),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
                           Text("Transparency Portal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          Text("Monitor city development & budget", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          Text("Monitor city Reports Resolution rates", style: TextStyle(color: Colors.white70, fontSize: 12)),
                         ])),
                         const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
                       ],
