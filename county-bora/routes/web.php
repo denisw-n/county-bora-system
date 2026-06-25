@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\HotlineController; 
 use App\Http\Controllers\Admin\TransparencyController;
 use App\Http\Controllers\Admin\InvitationController;
-use App\Http\Controllers\Admin\ProfileController; // Added
+use App\Http\Controllers\Admin\ProfileController;
 use App\Models\Report; 
 use Illuminate\Support\Facades\Route;
 
@@ -26,7 +26,6 @@ Route::get('/login', function () {
     return view('auth.login'); 
 })->name('login');
 
-// Applied the throttle middleware to the login POST route
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login_attempts');
 
 // --- Password Reset Routes ---
@@ -87,6 +86,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ratings', [ReportController::class, 'viewRatings'])->name('ratings.view');
         Route::get('/ratings/data', [ReportController::class, 'getRatings'])->name('ratings.data');
         
+        // MOVED THESE SPECIFIC ROUTES ABOVE THE {id} ROUTES
         Route::get('/search-prediction', [ReportController::class, 'search'])->name('search');
         Route::post('/quick-status-update', [ReportController::class, 'quickStatusUpdate'])->name('quickStatusUpdate');
         

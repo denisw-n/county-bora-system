@@ -9,7 +9,6 @@
         <nav class="flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
             <a href="{{ route('admin.dashboard') }}" class="py-5 hover:text-gray-900 transition">Global View</a>
             <a href="{{ route('admin.reports.index') }}" class="text-[#00872E] border-b-2 border-[#00872E] py-5">Incident Reports</a>
-            {{-- NEW RATINGS LINK --}}
             <a href="{{ route('admin.reports.ratings.view') }}" class="py-5 hover:text-gray-900 transition">Citizen Feedback</a>
         </nav>
     </div>
@@ -40,7 +39,7 @@
             <div>
                 <span class="text-[#FEDF0E] text-[10px] font-black uppercase tracking-[0.3em]">Quick Update Console</span>
                 <h2 class="text-white text-2xl font-black uppercase mt-2 tracking-tighter">Search & Update Status</h2>
-                <p class="text-gray-400 text-[10px] uppercase mt-2 tracking-widest leading-relaxed">Search by Tracking ID (NCC-...) to instantly update progress.</p>
+                <p class="text-gray-400 text-[10px] uppercase mt-2 tracking-widest leading-relaxed">Search by Tracking ID (NCC-...) to filter list & update.</p>
             </div>
 
             <div class="space-y-4">
@@ -48,7 +47,6 @@
                     <input type="text" id="reportPredictor" 
                         placeholder="ENTER TRACKING ID (e.g. NCC...)" 
                         class="w-full bg-white/10 border-none rounded-2xl px-6 py-4 text-white text-xs font-black placeholder:text-gray-600 focus:ring-2 focus:ring-[#FEDF0E] uppercase tracking-widest">
-                    <div id="predictionList" class="absolute z-50 w-full bg-white mt-2 rounded-2xl shadow-2xl border border-gray-100 hidden overflow-hidden"></div>
                 </div>
 
                 <div id="quickUpdateForm" class="hidden animate-in fade-in slide-in-from-top-2">
@@ -88,9 +86,9 @@
                     <th class="px-8 py-5 text-right">Action</th>
                 </tr>
             </thead>
-            <tbody class="text-xs font-semibold text-gray-600">
+            <tbody class="text-xs font-semibold text-gray-600" id="reportTableBody">
                 @forelse($reports as $report)
-                <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition group">
+                <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition group" data-id="{{ $report->id }}">
                     <td class="px-8 py-5">
                         <a href="{{ route('admin.reports.show', $report->id) }}" 
                            class="font-black text-[#00872E] hover:text-[#006D24] transition-colors tracking-tighter hover:underline decoration-2 underline-offset-4 block">
@@ -174,7 +172,7 @@
                 @endforelse
             </tbody>
         </table>
-        <div class="p-6 bg-gray-50/30 border-t border-gray-50">
+        <div id="paginationContainer" class="p-6 bg-gray-50/30 border-t border-gray-50">
             {{ $reports->links() }}
         </div>
     </div>
@@ -231,45 +229,56 @@
 </div>
 
 <script>
-    // Predictive Search Logic
     const predictor = document.getElementById('reportPredictor');
-    const list = document.getElementById('predictionList');
     const updateForm = document.getElementById('quickUpdateForm');
+    const paginationContainer = document.getElementById('paginationContainer');
+
+    function resetTable() {
+        const rows = document.querySelectorAll('#reportTableBody tr');
+        rows.forEach(row => row.style.display = '');
+        paginationContainer.style.display = 'block';
+        updateForm.classList.add('hidden');
+    }
 
     predictor.addEventListener('input', function(e) {
-        let query = e.target.value;
-        if (query.length < 2) { list.classList.add('hidden'); return; }
+        let query = e.target.value.trim();
+        
+        if (query.length === 0) {
+            resetTable();
+            return;
+        }
 
-        fetch("{{ route('admin.reports.search') }}?q=" + query)
+        fetch("{{ route('admin.reports.search') }}?q=" + encodeURIComponent(query))
             .then(res => res.json())
             .then(data => {
-                list.innerHTML = '';
+                const rows = document.querySelectorAll('#reportTableBody tr');
+                rows.forEach(row => row.style.display = 'none');
+                paginationContainer.style.display = 'none';
+
                 if (data.length > 0) {
-                    list.classList.remove('hidden');
                     data.forEach(item => {
-                        let div = document.createElement('div');
-                        div.className = "p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-50 flex justify-between items-center group";
-                        div.innerHTML = `
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-black uppercase text-[#00872E] group-hover:underline">${item.tracking_number}</span>
-                                <span class="text-[8px] font-bold text-gray-400 uppercase">${item.title}</span>
-                            </div>
-                            <span class="text-[9px] font-black text-gray-300 uppercase">${item.category}</span>
-                        `;
-                        div.onclick = () => {
-                            document.getElementById('quick_report_id').value = item.id;
-                            document.getElementById('targetDisplay').innerText = `Targeting: ${item.tracking_number}`;
-                            predictor.value = item.tracking_number;
-                            list.classList.add('hidden');
-                            updateForm.classList.remove('hidden');
-                        };
-                        list.appendChild(div);
+                        const targetRow = document.querySelector(`tr[data-id="${item.id}"]`);
+                        if (targetRow) targetRow.style.display = '';
                     });
+                    
+                    if (data.length === 1) {
+                        document.getElementById('quick_report_id').value = data[0].id;
+                        document.getElementById('targetDisplay').innerText = `Targeting: ${data[0].tracking_number}`;
+                        updateForm.classList.remove('hidden');
+                    } else {
+                        updateForm.classList.add('hidden');
+                    }
+                } else {
+                    // If no results, reset to default state so table is not empty
+                    resetTable();
                 }
+            })
+            .catch(err => {
+                console.error("Search failed:", err);
+                resetTable();
             });
     });
 
-    // Modal Controls
     function openDispatchModal(reportId, mode) {
         const modal = document.getElementById('dispatchModal');
         const form = document.getElementById('dispatchForm');

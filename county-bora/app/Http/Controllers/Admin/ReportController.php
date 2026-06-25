@@ -7,7 +7,7 @@ use App\Models\Report;
 use App\Models\AuditLog;
 use App\Models\Department;
 use App\Models\ReportMedia;
-use App\Models\ReportRating; // Added for ratings
+use App\Models\ReportRating; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -31,7 +31,7 @@ class ReportController extends Controller
     public function getRatings()
     {
         $ratings = ReportRating::with([
-            'report:id,title,tracking_number,category', 
+            'report:id,title,category', 
             'user:id,name'
         ])->latest()->get();
 
@@ -51,21 +51,34 @@ class ReportController extends Controller
     }
 
     /**
-     * Self-Predicting Search logic
+     * Self-Predicting Search logic (Hardened to prevent 500 errors)
      */
     public function search(Request $request)
     {
-        $query = $request->get('q');
+        $input = trim($request->get('q'));
 
-        $reports = Report::whereNotIn('status', ['resolved', 'rejected']) 
-                    ->where(function($q) use ($query) {
-                        $q->where('tracking_number', 'LIKE', "%{$query}%")
-                          ->orWhere('title', 'LIKE', "%{$query}%")
-                          ->orWhere('category', 'LIKE', "%{$query}%");
-                    })
-                    ->select('id', 'tracking_number', 'title', 'category', 'status')
-                    ->limit(5) 
+        // Return empty array instead of crashing if query is too short or empty
+        if (!$input || strlen($input) < 2) {
+            return response()->json([]);
+        }
+
+        $searchTerm = str_replace('NCC-', '', strtoupper($input));
+
+        // Use get() which returns an empty collection instead of throwing an error
+        $reports = Report::where('id', 'LIKE', "{$searchTerm}%")
+                    ->orWhere('title', 'LIKE', "%{$input}%")
+                    ->orWhere('category', 'LIKE', "%{$input}%")
+                    ->select('id', 'title', 'category', 'status')
+                    ->limit(5)
                     ->get();
+
+        // Safe check to ensure we don't try to append to a null object
+        if ($reports->isNotEmpty()) {
+            $reports->each(function ($report) {
+                // Ensure the model has the attribute before appending
+                $report->append('tracking_number');
+            });
+        }
 
         return response()->json($reports);
     }
@@ -75,6 +88,7 @@ class ReportController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Find or Fail is fine here as it's a direct resource update
         $report = Report::findOrFail($id);
         
         if ($report->status === 'resolved' || $report->status === 'rejected') {
@@ -145,7 +159,6 @@ class ReportController extends Controller
      */
     public function show($id)
     {
-        // Added 'rating' to the with() array
         $report = Report::with(['user', 'department', 'ward', 'media', 'rating'])->findOrFail($id);
         $departments = Department::all(); 
         
