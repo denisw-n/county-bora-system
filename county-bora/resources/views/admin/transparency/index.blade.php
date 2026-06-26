@@ -60,10 +60,26 @@
             options: { ...config }
         });
 
+        // Updated Line Chart with dynamic labels and fixed 0-100 scale
         new Chart(document.getElementById('lineChart'), {
             type: 'line',
-            data: { labels: ['6d ago', '5d', '4d', '3d', '2d', 'Latest'], datasets: [{ label: 'Avg Perf %', data: data.trends, borderColor: '#00872E', tension: 0.4, fill: true, backgroundColor: 'rgba(0, 135, 46, 0.1)' }] },
-            options: { ...config }
+            data: { 
+                labels: Array.from({length: data.trends.length}, (_, i) => i + 1), 
+                datasets: [{ 
+                    label: 'System Efficiency (%)', 
+                    data: data.trends, 
+                    borderColor: '#00872E', 
+                    tension: 0.4, 
+                    fill: true, 
+                    backgroundColor: 'rgba(0, 135, 46, 0.1)' 
+                }] 
+            },
+            options: { 
+                ...config,
+                scales: {
+                    y: { min: 0, max: 100 }
+                }
+            }
         });
 
         new Chart(document.getElementById('doughnutChart'), {

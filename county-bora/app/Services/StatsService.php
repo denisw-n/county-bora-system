@@ -11,24 +11,36 @@ use Illuminate\Support\Facades\Log;
 
 class StatsService
 {
+    /**
+     * Generate or update performance snapshots for each department.
+     * Uses updateOrCreate to ensure only one snapshot per department per day.
+     */
     public function generateDepartmentalSnapshot()
     {
         try {
+            // Standardize to start of day to group by date effectively
+            $today = now()->startOfDay();
             $departments = Department::all();
+
             foreach ($departments as $dept) {
                 $deptReports = Report::where('dept_id', $dept->id)->get();
                 $total = $deptReports->count();
                 $resolved = $deptReports->where('status', 'resolved')->count();
                 $percentage = ($total > 0) ? ($resolved / $total) * 100 : 0;
 
-                TransparencySnapshot::create([
-                    'metric_type'    => 'department_performance',
-                    'entity_id'      => $dept->id,
-                    'total_count'    => $total,
-                    'resolved_count' => $resolved,
-                    'percentage'     => $percentage,
-                    'snapshot_date'  => now(),
-                ]);
+                // Prevents duplication: updates existing entry for today if it exists
+                TransparencySnapshot::updateOrCreate(
+                    [
+                        'entity_id'     => $dept->id,
+                        'snapshot_date' => $today,
+                    ],
+                    [
+                        'metric_type'    => 'department_performance',
+                        'total_count'    => $total,
+                        'resolved_count' => $resolved,
+                        'percentage'     => $percentage,
+                    ]
+                );
             }
         } catch (\Exception $e) {
             Log::error("Snapshot generation failed: " . $e->getMessage());
@@ -43,12 +55,11 @@ class StatsService
         try {
             DB::table('department_daily_stats')->truncate();
 
-            // Aggregate all statuses dynamically without the 30-day restriction
+            // Aggregate all statuses dynamically
             $stats = Report::query()
                 ->whereNotNull(['dept_id', 'ward_id'])
                 ->where('dept_id', '!=', '')
                 ->where('ward_id', '!=', '')
-                // Removed the 30-day filter to include all historical reports
                 ->select('dept_id', 'ward_id', DB::raw('DATE(updated_at) as date'), 'status', DB::raw('count(*) as count'))
                 ->groupBy('dept_id', 'ward_id', 'date', 'status')
                 ->get();

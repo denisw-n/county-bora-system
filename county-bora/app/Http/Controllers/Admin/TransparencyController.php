@@ -10,6 +10,7 @@ use App\Models\Ward;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class TransparencyController extends Controller
 {
@@ -41,13 +42,12 @@ class TransparencyController extends Controller
 
         $allStats = $dailyQuery->latest('date')->get()->groupBy('dept_id');
 
-        // Helper to normalize JSON keys to the expected ['Dispatched', 'Resolved', 'Pending', 'In-progress']
         $normalizeStatus = function($status) {
             $key = str_replace('_', '-', strtolower($status));
             return ($key === 'in-progress') ? 'In-progress' : ucfirst($key);
         };
 
-        // Paginated stats for the list view
+        // Paginated stats
         $perPage = 5;
         $page = $request->input('page', 1);
         $offset = ($page - 1) * $perPage;
@@ -102,8 +102,8 @@ class TransparencyController extends Controller
             ->latest('snapshot_date')
             ->get();
 
-        // 1. Calculate performance for all wards
-        $allWardPerformance = DepartmentDailyStat::get()->groupBy('ward_id')->map(function ($rows) {
+        // 1. Calculate performance and split into Top and Bottom sets
+        $allWardPerformance = DepartmentDailyStat::all()->groupBy('ward_id')->map(function ($rows) {
             $totalResolved = 0;
             $totalItems = 0;
             foreach ($rows as $row) {
@@ -115,11 +115,20 @@ class TransparencyController extends Controller
                     }
                 }
             }
-            return $totalItems > 0 ? ($totalResolved / $totalItems) * 100 : 0;
-        });
+            return $totalItems > 0 ? ($totalResolved / $totalItems) * 100 : null;
+        })->filter(); 
 
-        $topWards = $allWardPerformance->sortByDesc(fn($score) => $score)->take(5);
-        $bottomWards = $allWardPerformance->sortBy(fn($score) => $score)->take(5);
+        $sortedWards = $allWardPerformance->sortDesc();
+        $totalWards = $sortedWards->count();
+        
+        if ($totalWards > 1) {
+            $midPoint = (int) ceil($totalWards / 2);
+            $topWards = $sortedWards->take($midPoint)->take(5);
+            $bottomWards = $sortedWards->slice($midPoint)->take(5);
+        } else {
+            $topWards = $sortedWards;
+            $bottomWards = collect();
+        }
 
         // 2. Radar Data
         $radarDataCollection = Department::with('dailyStats')->get()->map(function ($dept) {
@@ -142,17 +151,24 @@ class TransparencyController extends Controller
         })->sortByDesc('efficiency')->take(5);
 
         $chartData = [
-            'labels'      => $latestSnapshots->map(fn($s) => $s->department->dept_name ?? 'Unknown'),
-            'performance' => $latestSnapshots->pluck('percentage'),
-            'trends'      => TransparencySnapshot::latest()->take(6)->pluck('percentage')->reverse()->values(),
-            'status'      => [
+            'labels'            => $latestSnapshots->map(fn($s) => $s->department->dept_name ?? 'Unknown'),
+            'performance'       => $latestSnapshots->pluck('percentage'),
+            // UPDATED: Now shows the daily system-wide average efficiency trend
+            'trends'            => TransparencySnapshot::query()
+                                    ->select('snapshot_date', DB::raw('AVG(percentage) as avg_perf'))
+                                    ->groupBy('snapshot_date')
+                                    ->orderBy('snapshot_date', 'asc')
+                                    ->take(30)
+                                    ->pluck('avg_perf')
+                                    ->map(fn($val) => round($val, 2)),
+            'status'            => [
                 'Resolved'    => $fullStats->sum('Resolved'),
                 'Pending'     => $fullStats->sum('Pending'),
                 'In-progress' => $fullStats->sum('In-progress'),
                 'Dispatched'  => $fullStats->sum('Dispatched'),
             ],
-            'radarLabels' => $radarDataCollection->pluck('name'),
-            'radarData'   => $radarDataCollection->pluck('efficiency'),
+            'radarLabels'       => $radarDataCollection->pluck('name'),
+            'radarData'         => $radarDataCollection->pluck('efficiency'),
             'topWardsLabels'    => $topWards->keys()->map(fn($id) => Ward::find($id)->name ?? 'Unknown'),
             'topWardsScores'    => $topWards->values(),
             'bottomWardsLabels' => $bottomWards->keys()->map(fn($id) => Ward::find($id)->name ?? 'Unknown'),
