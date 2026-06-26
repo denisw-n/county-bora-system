@@ -1,32 +1,50 @@
-FROM richarvey/nginx-php-fpm:3.1.6
+# ---------- Stage 1: Build frontend ----------
+FROM node:20.19-alpine AS frontend
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+
+# ---------- Stage 2: Build Laravel ----------
+FROM php:8.3-fpm
+
+# Install system packages
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    unzip \
+    zip \
+    libzip-dev \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    nginx \
+    && docker-php-ext-install pdo pdo_mysql zip
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
 COPY . .
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- \
-    --install-dir=/usr/local/bin \
-    --filename=composer
-
-# Install Node.js and npm (Alpine)
-RUN apk add --no-cache nodejs npm
-
-# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Build frontend assets
-RUN npm install
-RUN npm run build
+# Copy built frontend assets
+COPY --from=frontend /app/public/build ./public/build
 
-# Laravel optimizations
-RUN php artisan config:cache
-RUN php artisan route:cache
-RUN php artisan view:cache
+# Laravel caches
+RUN php artisan config:cache || true
+RUN php artisan route:cache || true
+RUN php artisan view:cache || true
 
-# Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 8080
 
-CMD ["supervisord", "-n"]
+CMD php artisan serve --host=0.0.0.0 --port=8080
