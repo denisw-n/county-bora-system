@@ -9,10 +9,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin \
     --filename=composer
 
-# Install Node.js 20
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs
+# Install Node.js and npm (Alpine)
+RUN apk add --no-cache nodejs npm
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
