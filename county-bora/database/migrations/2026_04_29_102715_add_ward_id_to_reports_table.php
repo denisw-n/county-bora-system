@@ -8,22 +8,26 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('reports', function (Blueprint $table) {
-            // We use foreignUuid because your system uses UUIDs
-            // nullable() ensures your current reports don't throw an error
-            $table->foreignUuid('ward_id')
-                  ->after('user_id') 
-                  ->nullable() 
-                  ->constrained('wards')
-                  ->onDelete('cascade');
-        });
+        // Only add column if it does NOT already exist (prevents crash + keeps data safe)
+        if (!Schema::hasColumn('reports', 'ward_id')) {
+            Schema::table('reports', function (Blueprint $table) {
+                $table->foreignUuid('ward_id')
+                    ->after('user_id')
+                    ->nullable()
+                    ->constrained('wards')
+                    ->onDelete('cascade');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('reports', function (Blueprint $table) {
-            $table->dropForeign(['ward_id']);
-            $table->dropColumn('ward_id');
-        });
+        // Safe rollback (only if column exists)
+        if (Schema::hasColumn('reports', 'ward_id')) {
+            Schema::table('reports', function (Blueprint $table) {
+                $table->dropForeign(['ward_id']);
+                $table->dropColumn('ward_id');
+            });
+        }
     }
 };
