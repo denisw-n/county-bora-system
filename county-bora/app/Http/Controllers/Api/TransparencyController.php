@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DepartmentDailyStat;
 use App\Models\TransparencySnapshot;
 use App\Models\Department;
+use Illuminate\Support\Facades\DB; // Make sure to import this
 
 class TransparencyController extends Controller
 {
@@ -42,15 +43,15 @@ class TransparencyController extends Controller
                 'name' => $dept->dept_name, 
                 'efficiency' => $total > 0 ? round(($resolved / $total) * 100, 2) : 0
             ];
-        })->sortByDesc('efficiency'); // Removed take(5) to get all depts
+        })->sortByDesc('efficiency');
 
-        // 3. Match Admin Departmental Performance Logic
+        // 3. Get Snapshots (Mirroring Admin Logic)
         $latestSnapshots = TransparencySnapshot::with('department')
             ->whereIn('id', function($query) {
                 $query->selectRaw('MAX(id)')->from('transparency_snapshots')->groupBy('entity_id');
             })->latest('snapshot_date')->get();
 
-        // 4. Return JSON
+        // 4. Return JSON with MIRRORED Trend Logic
         return response()->json([
             'total_issues' => $fullStats->sum(fn($s) => array_sum($s)),
             'status' => [
@@ -59,10 +60,18 @@ class TransparencyController extends Controller
                 'In-progress' => $fullStats->sum('In-progress'),
                 'Dispatched'  => $fullStats->sum('Dispatched'),
             ],
-            // Now passing Department Performance data to mirror Admin
             'performance' => $latestSnapshots->pluck('percentage'), 
             'labels'      => $latestSnapshots->map(fn($s) => $s->department->dept_name ?? 'Unknown'),
-            'trends'      => TransparencySnapshot::latest()->take(6)->pluck('percentage')->reverse()->values(),
+            
+            // MIRRORED TREND LOGIC: Now pulls 30-day average just like Admin
+            'trends' => TransparencySnapshot::query()
+                            ->select('snapshot_date', DB::raw('AVG(percentage) as avg_perf'))
+                            ->groupBy('snapshot_date')
+                            ->orderBy('snapshot_date', 'asc')
+                            ->take(30)
+                            ->pluck('avg_perf')
+                            ->map(fn($val) => round($val, 2)),
+
             'radarLabels' => $radarDataCollection->pluck('name'),
             'radarData'   => $radarDataCollection->pluck('efficiency'),
             'message'     => 'Transparency data retrieved successfully'
