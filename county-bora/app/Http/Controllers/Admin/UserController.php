@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -37,12 +38,13 @@ class UserController extends Controller
      */
     public function toggleVerification(Request $request, User $user)
     {
-        $action = $request->input('action'); 
+        $action = $request->input('action');
 
         if ($action === 'approve') {
             $user->update(['is_verified' => true]);
 
             DB::table('notifications')->insert([
+                'id'         => (string) Str::uuid(),
                 'user_id'    => $user->id,
                 'title'      => 'Account Verified',
                 'message'    => 'Congratulations! Your account has been verified. You now have full access to County Bora services.',
@@ -52,17 +54,14 @@ class UserController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return redirect()->back()->with('success', "Citizen verified and notified.");
-        } 
+            return redirect()->back()->with('success', 'Citizen verified and notified.');
+        }
 
         if ($action === 'reject') {
-            /** * THE FIX: Change role to 'rejected_citizen'. 
-             * This removes them from verificationIndex because the query 
-             * filters for role == 'citizen'.
-             */
             $user->update(['role' => 'rejected_citizen']);
 
             DB::table('notifications')->insert([
+                'id'         => (string) Str::uuid(),
                 'user_id'    => $user->id,
                 'title'      => 'Verification Declined',
                 'message'    => 'Your ID verification was unsuccessful. Please ensure your ID photo is clear and matches your profile details.',
@@ -71,12 +70,15 @@ class UserController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            
-            return redirect()->back()->with('warning', "Verification rejected. User removed from queue.");
+
+            return redirect()->back()->with('warning', 'Verification rejected. User removed from queue.');
         }
 
-        $user->update(['is_verified' => !$user->is_verified]);
-        return redirect()->back()->with('success', "Verification status updated.");
+        $user->update([
+            'is_verified' => !$user->is_verified
+        ]);
+
+        return redirect()->back()->with('success', 'Verification status updated.');
     }
 
     /**
@@ -85,6 +87,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $user->delete();
+
         return redirect()->back()->with('warning', 'User account permanently removed.');
     }
 }
