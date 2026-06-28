@@ -5,4 +5,11 @@ class ApiConstants {
 
   // This is the root address used to load images properly
   static const String storageUrl = 'http://192.168.43.123:8000';
+  // Production API
+  //static const String baseUrl =
+      //'https://county-bora-system.onrender.com/api';
+
+  // Used for loading images
+  //static const String storageUrl =
+      //'https://county-bora-system.onrender.com';
 }
